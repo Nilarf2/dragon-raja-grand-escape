@@ -1,2 +1,3 @@
-// Elevation: 出典：国土地理院 標高タイル（https://maps.gsi.go.jp/development/ichiran.html）を加工して作成
+// Elevation: 鍑哄吀锛氬浗鍦熷湴鐞嗛櫌 妯欓珮銈裤偆銉紙https://maps.gsi.go.jp/development/ichiran.html锛夈倰鍔犲伐銇椼仸浣滄垚
 (function(C){C.ANCHORS={"station": {"x": 3.5, "y": 5.24, "z": 20, "rot": 0.506}, "parkingLot": {"x": 50, "y": 4.81, "z": 30, "rot": 0.506}, "ferrisWheel": {"x": -262, "y": 11.26, "z": -247, "rot": 3.142}, "school": {"x": 152, "y": 9.87, "z": -132, "rot": 0.0}, "loco": {"x": 20, "y": 5.19, "z": -57, "rot": 0.506}, "shrine": {"x": 80, "y": 49.18, "z": -340, "rot": -1.222}, "tramBase": {"x": 92, "y": 53.63, "z": -352, "rot": 0.349}, "tramTop": {"x": 122, "y": 163.4, "z": -575, "rot": 0.14}, "mineShrine": {"x": 126, "y": 176.37, "z": -602, "rot": -1.92}, "jizo": {"x": 123, "y": 171.4, "z": -588, "rot": -1.92}, "cliffRock": {"x": 104, "y": 159.34, "z": -590, "rot": -1.92}};})(window.CITY);
+
