@@ -1,6 +1,6 @@
 # Notices and credits
 
-The code written for this game is under the MIT licence (see `LICENSE`).
+The code written for this game is © 2026 Nilarf2, under the MIT licence (see `LICENSE`).
 The parts below come from others and keep their own terms.
 
 ## three.js

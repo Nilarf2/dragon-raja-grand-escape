@@ -263,9 +263,11 @@
       yield () => tr.dwell > 0;
       H.sfx('doorChime');
       H.sub('白色的蒸汽像云一样漫过站台。车厢里空无一人，灯火通明。', 'White steam drifts over the platform like a cloud. The coaches are empty and brightly lit.', 6); yield 6;
-      // her window: the coach nearest the camera
-      const car = tr.model.cars[Math.min(2, tr.model.cars.length - 1)], cp = car.position;
-      H.shot(V(eyeP[0], P1.yAt(66) + 1.55, eyeP[1]).lerp(cp, 0.55), cp.clone().add(V(0, 1.6, 0)), { fov: 38, ease: 1 });
+      // her window: the first coach, seen from the platform at eye level, a little from behind, so the window sits left
+      // of centre (the note opens on the right) and the lit windows run off to the right
+      const car = tr.model.cars[Math.min(2, tr.model.cars.length - 1)], cs = C.stationZone.toSN(car.position.x, car.position.z)[0];
+      const camW = fr.W(P1.n0 + 2.75, cs + 2.2), winW = fr.W(P1.n0 - 0.1, cs - 1.4);
+      H.shot(V(camW[0], P1.yAt(cs) + 1.5, camW[1]), V(winW[0], fr.railY(cs) + 2.15, winW[1]), { fov: 44, ease: 1 });
       H.sub('ドアが閉まります。ご注意ください。', 'The doors are closing. Please stand clear.', 4, '车门即将关闭，请注意。');
       H.sfx('doorClose'); yield 4;
       H.note('Sakura到底是谁？<br>我以后去哪里找你？', 'Who is Sakura, really? Where do I find you after this?', 0); H.capture('The window · 21:45'); yield 7;
@@ -299,7 +301,7 @@
         yield 5.5; c.style.opacity = 0; yield 1;
       }
       const end = document.createElement('div'); end.className = 'end';
-      end.innerHTML = '世界很温柔。<br><span style="font-size:14px;letter-spacing:.2em">a fan tribute · story by Jiang Nan, <i>Dragon Raja</i> III · original music<br>map data © OpenStreetMap contributors · elevation © 国土地理院 GSI</span><br><span style="font-size:13px;opacity:.7">click to wander the town</span>';
+      end.innerHTML = '世界很温柔。<br><span style="font-size:14px;letter-spacing:.2em">a fan tribute by Nilarf2 · story by Jiang Nan, <i>Dragon Raja</i> III · original music<br>map data © OpenStreetMap contributors · elevation © 国土地理院 GSI</span><br><span style="font-size:13px;opacity:.7">click to wander the town</span>';
       box.appendChild(end); requestAnimationFrame(() => { end.style.opacity = 1; });
       yield H.key('', 'Space');
     },
