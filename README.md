@@ -1,13 +1,12 @@
-# [场景复刻]龙族：迎着阳光盛大逃亡
+# 迎着阳光盛大逃亡 · A Grand Escape into the Sun
 
-**A Grand Escape into the Sun (v0.1-alpha)**
+A fan tribute by **Nilarf2** to *Dragon Raja* III (龙族, by Jiang Nan), Chapter 10. It is one day at **梅津寺
+Baishinji** in Matsuyama, rebuilt in 3D from real map and elevation data. It runs offline in the browser, on desktop
+and on phones.
 
-A fan tribute to *Dragon Raja* III (龙族, by Jiang Nan), Chapter 10. It is one day at **梅津寺 Baishinji** in Matsuyama,
-rebuilt in 3D from real map and elevation data. It runs offline in the browser, on desktop and on phones.
+**v0.2-alpha** (2026-10-05). What changed is in [`CHANGELOG.md`](CHANGELOG.md).
 
-**v0.1-alpha**, the first public build. What changed is in [`CHANGELOG.md`](CHANGELOG.md).
-
-《龙族III》第十章「迎着阳光盛大逃亡」的同人致敬作品：路明非带着绘梨衣逃到松山梅津寺的那一天，
+《龙族III》第十章「迎着阳光盛大逃亡」的同人致敬作品（作者 Nilarf2）：路明非带着绘梨衣逃到松山梅津寺的那一天，
 用真实地形与地图数据在浏览器里重建。离线运行，电脑和手机都能玩。
 
 ![Baishinji station at sunset](docs/screenshots/station-sunset.jpg)
@@ -45,9 +44,14 @@ works from GitHub Pages. If it runs slowly, open `index.html?lite`.
   - the Ferris wheel that is no longer there.
 - **The station, modelled in detail from photos:**
   - brick-faced platforms with tactile strips and white canopies;
-  - the slate-roofed station house with its 「梅 津 寺 駅」 gable;
-  - the level crossing with its concrete slabs, barriers and X-signals;
-  - the diamond-grid sea wall and the beach steps;
+  - the slate-roofed station house with its 「梅 津 寺 駅」 gable, and a waiting room you can walk into (the ticket
+    window, the fare chart, posters, and a clock that keeps the game's time);
+  - the passenger crossing between the platforms, and the level crossing with its concrete slabs, barriers and
+    X-signals;
+  - speakers, clocks, local posters and end chains on the platforms; rail joints, ATS beacons and the turnout on the
+    track;
+  - the diamond-grid sea wall with its weep pipes, the beach steps, seaweed, driftwood and rocks on the sand;
+  - street lamps, 「止まれ」, a guardrail and the round red post box around the station;
   - mercury lamps whose light pools glint on the wet platform in the rain;
   - the orange Iyotetsu EMUs, and the D51 with its lit coaches.
 - **No character models yet.** You see through Lu Mingfei's eyes. Erii is there through her notebook, her lines and
@@ -90,20 +94,18 @@ works from GitHub Pages. If it runs slowly, open `index.html?lite`.
 - **Rebuilding the data.** `tools/` has the scripts that download the elevation tiles and the map and write
   `js/data/` (see [`tools/README.md`](tools/README.md)). You only need them to change the area.
 
-## Status (v0.1-alpha)
+## Status (v0.2-alpha)
 This is an early build. It works from start to end, but some things are still to come:
 - **No character models yet.** You see through Lu Mingfei's eyes.
 - **Performance:** it needs a reasonably recent graphics card. On a slow computer, open `index.html?lite` (half
   resolution, no shadows), and `?stats` shows the frame rate.
-- **Tested** in desktop Chrome. Other current browsers and phones should work, but haven't been checked on real
-  devices yet.
-- **Coming next:**
-  - more detail around the station: the passenger crossing, the waiting room seen through the glass, and the
-    platform clock, posters and speakers;
-  - a denser, more varied town.
+- **Tested** in desktop Chrome, and Story mode has been played through on a real computer. Other current browsers
+  and phones should work, but haven't been checked on real devices yet.
+- **Coming next:** a denser, more varied town.
 
 ## Credits and licences
-- Code: MIT. See [`LICENSE`](LICENSE).
+- Made by **Nilarf2** · 作者 Nilarf2.
+- Code: MIT, © 2026 Nilarf2. See [`LICENSE`](LICENSE).
 - Third-party parts keep their own terms. See [`NOTICE.md`](NOTICE.md):
   - three.js r149 © 2010-2023 three.js authors (MIT);
   - map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL 1.0). `js/data/osm.js` and

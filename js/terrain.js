@@ -114,16 +114,21 @@
   C.railYs = (s) => { const f = C.clamp(s - RYS0, 0, RYS.length - 1.001), i = f | 0; return C.lerp(RYS[i], RYS[i + 1], f - i); };
   const SZ = { s0: -34, s1: 140, n0: -36, n1: 30, m: 8 }, NW = -7.1;   // zone (station frame) and sea-wall face line
   const XS = 0, XW = 2.8;   // level crossing: centre s and half-width of the road (the coast road crosses at right angles)
-  C.stationZone = Object.assign({ NW, toSN, XS, XW }, SZ);
+  const PXS = 19.6, PXW = 0.8;   // 構内踏切, the passenger crossing at the platforms' north ends: centre s and half-width
+  C.stationZone = Object.assign({ NW, toSN, XS, XW, PXS, PXW }, SZ);
   const NH0 = NH.slice();
-  function profile(s, n, base) {
+  // vis: the drawn surface. Walking meets the drop at NW-1.0 → NW-0.1, at the foot of the sea wall. The 1 m mesh is
+  // world-aligned and the wall runs diagonally, so it draws the drop 1 m further back (NW → NW+0.9), under the coping:
+  // otherwise its triangles poke through the sloped wall face as a row of sand teeth.
+  function profile(s, n, base, vis) {
     const form = C.railYs(s) - 0.75;
     let h;
     if (s < 6) h = Math.abs(n - ST.n0) < 4.5 ? form : C.lerp(form, base, C.smooth(4.5, 9, Math.abs(n - ST.n0)));
     else {
       const beach = Math.min(base, form - 3.0 - Math.max(0, (NW - 1 - n)) * 0.035);
       const land = n < 8 ? form : C.lerp(form, base, C.smooth(8, 15, n));
-      h = n <= NW - 1.0 ? Math.max(-2, beach) : n >= NW - 0.1 ? land : C.lerp(Math.max(-2, beach), land, (n - (NW - 1.0)) / 0.9);
+      const r0 = NW - 1.0 + (vis ? Math.min(C.smooth(6, 9, s), 1 - C.smooth(136, 139, s)) : 0);
+      h = n <= r0 ? Math.max(-2, beach) : n >= r0 + 0.9 ? land : C.lerp(Math.max(-2, beach), land, (n - r0) / 0.9);
       if (s < 12) h = C.lerp(Math.abs(n - ST.n0) < 4.5 ? form : base, h, C.smooth(6, 12, s));
     }
     // the level crossing: the road rises to the rail heads across the formation, and ramps down to the lot / coast road
@@ -132,6 +137,14 @@
       const yR = C.railYs(s) - 0.03, dn = n - ST.n0;
       const road = dn > 4.5 ? C.lerp(yR, base, C.smooth(4.5, 12, dn)) : dn < -4.5 ? C.lerp(yR, base, C.smooth(4.5, 14, -dn)) : yR;
       h = C.lerp(h, road, 1 - C.smooth(XW, XW + 2.5, dx));
+    }
+    // the passenger crossing: rail-head level from platform 2's ramp foot across both tracks to platform 1's, then a walk
+    // easing down east to the station house's portico. It slopes into the track bed, and stays off the house's south wall.
+    const dq = s - PXS;
+    if (Math.abs(dq) < PXW + 1.6 && n > -7.4 && n < 14) {
+      const yR = C.railYs(s) - 0.03, tgt = Math.max(h, yR - 0.43 * C.smooth(6.8, 12.5, n));
+      const bw = dq < 0 ? C.lerp(1.6, 0.5, C.smooth(5.5, 7.2, n)) : 1.6;
+      h = C.lerp(h, tgt, (1 - C.smooth(PXW, PXW + bw, Math.abs(dq))) * C.smooth(-7.4, -6.9, n) * (1 - C.smooth(13.4, 14, n)));
     }
     const w = Math.min(C.smooth(SZ.s0, SZ.s0 + SZ.m, s), 1 - C.smooth(SZ.s1 - SZ.m, SZ.s1, s), C.smooth(SZ.n0, SZ.n0 + SZ.m, n), 1 - C.smooth(SZ.n1 - SZ.m, SZ.n1, n));
     return C.lerp(base, h, w);
@@ -146,11 +159,11 @@
   PR.i0 = Math.floor((PR.z0 - NG.z0) / NG.dx) - 1; PR.i1 = Math.ceil((PR.z1 - NG.z0) / NG.dx) + 1;
   PR.x0 = NG.x0 + PR.j0 * NG.dx; PR.x1 = NG.x0 + PR.j1 * NG.dx; PR.z0 = NG.z0 + PR.i0 * NG.dx; PR.z1 = NG.z0 + PR.i1 * NG.dx;
   const inPatch = (x, z) => x >= PR.x0 && x <= PR.x1 && z >= PR.z0 && z <= PR.z1;
-  const patchH = (x, z) => { const [s, n] = toSN(x, z); return profile(s, n, bil(NG, NH0, x, z)); };
+  const patchH = (x, z, vis) => { const [s, n] = toSN(x, z); return profile(s, n, bil(NG, NH0, x, z), vis); };
   C.groundH = (x, z) => inPatch(x, z) ? patchH(x, z) : inNear(x, z) ? bil(NG, NH, x, z) : bil(FG, FH, x, z);
   // bake the profile into the 5 m grid too (sea mask, coarse queries stay consistent)
   for (let i = PR.i0; i <= PR.i1; i++) for (let j = PR.j0; j <= PR.j1; j++) NH[i * NG.nx + j] = patchH(NG.x0 + j * NG.dx, NG.z0 + i * NG.dx);
-  C.stationPatch = PR;
+  C.stationPatch = PR; C.stationPatchVis = (x, z) => patchH(x, z, true);
   for (const k in A) if (!['station', 'shrine', 'tramBase', 'tramTop', 'jizo', 'mineShrine', 'cliffRock', 'parkingLot', 'townStreet', 'lanternStreet'].includes(k)) A[k].y = C.groundH(A[k].x, A[k].z);
   A.parkingLot.y = 4.7;
 
@@ -245,7 +258,7 @@
     const pos = new Float32Array(nx * nz * 3), colr = new Float32Array(nx * nz * 3), Z = C.stationZone;
     let p = 0;
     for (let i = 0; i < nz; i++) for (let j = 0; j < nx; j++) {
-      const x = P.x0 + j, z = P.z0 + i, h = C.groundH(x, z), [s, n] = Z.toSN(x, z);
+      const x = P.x0 + j, z = P.z0 + i, h = C.stationPatchVis(x, z), [s, n] = Z.toSN(x, z);
       pos[p] = x; pos[p + 1] = h; pos[p + 2] = z;
       const inZ = s > Z.s0 + 4 && s < Z.s1 - 4 && n > Z.n0 + 4 && n < Z.n1 - 4, nz2 = C.fbm(x * 0.15, z * 0.15);
       let c;

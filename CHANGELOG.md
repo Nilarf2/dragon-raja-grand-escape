@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.2-alpha (2026-10-05)
+- **The passenger crossing (構内踏切):** a walkway across both tracks at the platforms' north ends, as in the photos,
+  with crossing panels, tactile blocks, two 「とまれ」 posts whose red lamps blink with the level crossing, and two
+  lamps. The platform ramps now come down to it.
+- **The waiting room:** you can walk in. The glass doors slide open as you come near. Inside are the closed ticket
+  window with the fare chart, posters, a timetable, a clock that keeps the game's time, and two benches you can sit
+  on. At night it is the warm room on the platform, seen through its windows.
+- **On the platforms:** PA speakers on the canopy posts, a double-faced clock under each canopy (it keeps the game's
+  time, like the one in the waiting room), local posters on the back fences (坊っちゃん列車, 道後温泉, みかん), and a
+  chain with 「関係者以外立入禁止」 across the far end of each platform.
+- **The beach:** weep pipes with dark water streaks along the sea wall, a plainer concrete stair with a coping, a line of
+  seaweed and driftwood where the tide stops, and a few rocks.
+- **The track:** rail joints with fishplates and bolts, yellow ATS beacons, a covered cable trough by the sea wall, and
+  at the turnout north of the station a point machine, the frog and check rails.
+- **Around the station:** street lamps with a warm light on the road to the level crossing, 「止まれ」 and stop lines
+  before the crossing, a guardrail where the road runs above the beach, more detailed pole transformers, and a
+  round red post box in front of the station.
+- **The sea wall from the beach:** the sand no longer shows a row of teeth along the foot of the wall.
+- **Fixes:**
+  - The platform benches now face the track (they stood across the platform).
+  - The station name boards read correctly from both sides (the back was mirrored).
+  - The stop marks face the driver.
+  - The lamps and stop marks moved with the new platform ends.
+  - Story, the last train: the shot of her window was pressed against the side of the coach (since v0.1-alpha). It
+    now looks at the lit window from the platform, with the coach running off to the right.
+- **README:** the feature list names the new station details, and three screenshots are new (the station at sunset,
+  the crossing, the platform at night in the rain).
+
+## v0.1.1-alpha (2026-10-05)
+- **Author:** the copyright holder is now **Nilarf2** (still the MIT licence). The title screen, the end card, the
+  README and NOTICE name the author.
+- **Story mode** has been played through on a real computer: the black-screen fix from v0.1-alpha holds.
+
 ## v0.1-alpha (2026-10-05)
 The first public build.
 
