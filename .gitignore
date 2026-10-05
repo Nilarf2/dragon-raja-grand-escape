@@ -11,3 +11,6 @@ desktop.ini
 *.swp
 .idea/
 .vscode/
+
+# Generated static release
+dist/

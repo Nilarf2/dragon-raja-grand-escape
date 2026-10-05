@@ -1,4 +1,6 @@
-# 迎着阳光盛大逃亡 · A Grand Escape into the Sun
+# [场景复刻]龙族：迎着阳光盛大逃亡
+
+**A Grand Escape into the Sun (v0.1-alpha)**
 
 A fan tribute to *Dragon Raja* III (龙族, by Jiang Nan), Chapter 10. It is one day at **梅津寺 Baishinji** in Matsuyama,
 rebuilt in 3D from real map and elevation data. It runs offline in the browser, on desktop and on phones.
