@@ -1,0 +1,13 @@
+# Data-pipeline download cache (rebuild with: python tools/fetch_data.py)
+tools/cache/
+__pycache__/
+*.pyc
+.venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.idea/
+.vscode/

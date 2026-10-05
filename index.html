@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>迎着阳光盛大逃亡 — A Grand Escape into the Sun (v0.1-alpha)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+
+<!-- cinematic layers (story mode) -->
+<div id="bars"><div></div><div></div></div>
+<div id="fade"></div>
+<div id="chapter"><div class="jp"></div><div class="en"></div><div class="meta"></div></div>
+<div id="sub"><div class="q"></div><div class="z"></div><div class="t"></div></div>
+<div id="note"><div class="page"></div></div>
+<div id="prompt"></div>
+<div id="cards"></div>
+
+<!-- touch controls (shown on touch screens) -->
+<div id="joy"><div></div></div>
+<div id="touchbar">
+  <button data-k="act" class="act">✋</button>
+  <button data-k="skip" class="story-only">⏭</button>
+  <button data-k="places" class="wander-only">📍</button>
+  <button data-k="time" class="wander-only">🌗</button>
+  <button data-k="rain" class="wander-only">☔</button>
+  <button data-k="fog" class="wander-only">🌫</button>
+</div>
+
+<div id="title" class="overlay">
+  <div class="title-card">
+    <div class="jp">迎着阳光盛大逃亡</div>
+    <h1>A Grand Escape into the Sun</h1>
+    <p class="sub">Baishinji, Matsuyama · Saturday, 27 April 2013<br>a fan tribute to <i>Dragon Raja</i> III by Jiang Nan</p>
+    <div class="buttons"><button id="btn-story">Story</button><button id="btn-wander">Wander</button></div>
+    <p class="hint">sound on recommended · story takes about 15 minutes<span class="touch-hint"><br>left thumb: walk · right thumb: look · tap to continue</span></p>
+  </div>
+  <p class="credit">v0.1-alpha · a non-commercial fan work · map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) ·
+    elevation: 国土地理院 <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">GSI</a> · built with <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a></p>
+</div>
+
+<div id="hud" class="hidden">
+  <div id="clock">17:30</div>
+  <div id="place"></div>
+  <div id="toast"></div>
+  <div id="goto" class="hidden"></div>
+  <div id="help">
+    <b>WASD</b> walk &nbsp; <b>Shift</b> run &nbsp; <b>Drag</b> look &nbsp; <b>Wheel</b> zoom &nbsp; <b>E</b> sit<br>
+    <b>G</b> go to a place &nbsp; <b>1–4</b> morning / noon / sunset / night &nbsp; <b>T</b> time speed<br>
+    <b>R</b> drizzle &nbsp; <b>F</b> sea fog &nbsp; <b>P</b> photo mode &nbsp; <b>M</b> mute &nbsp; <b>H</b> hide help
+    <div class="credit">map data © OpenStreetMap contributors · elevation © 国土地理院 GSI Japan · three.js</div>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/data/geo.js"></script>
+<script src="js/data/terrain_near.js"></script>
+<script src="js/data/terrain_far.js"></script>
+<script src="js/data/osm.js"></script>
+<script src="js/data/rail.js"></script>
+<script src="js/data/anchors.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/sky.js"></script>
+<script src="js/sea.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/postfx.js"></script>
+<script src="js/landmarks.js"></script>
+<script src="js/trains.js"></script>
+<script src="js/station.js"></script>
+<script src="js/town.js"></script>
+<script src="js/railway.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/player.js"></script>
+<script src="js/story.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1a1f33;
+  font-family: "Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", "Segoe UI", system-ui, sans-serif; }
+#app canvas { display: block; }
+.hidden { display: none !important; }
+:root { --serif: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", "Noto Serif CJK SC", "Songti SC", serif; }
+
+/* title */
+.overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, rgba(40,50,100,.25), rgba(255,170,120,.35)); transition: opacity 2s; z-index: 20; }
+.overlay.fade { opacity: 0; pointer-events: none; }
+.title-card { text-align: center; color: #fff; text-shadow: 0 2px 14px rgba(40,30,60,.55); }
+.title-card .jp { font-size: 58px; letter-spacing: .25em; font-family: var(--serif); }
+.title-card h1 { margin: 6px 0 0; font-weight: 300; font-size: 30px; letter-spacing: .3em; }
+.title-card .sub { opacity: .92; margin: 14px 0 30px; line-height: 1.7; font-size: 15px; }
+.title-card .hint { font-size: 12px; opacity: .8; margin-top: 18px; }
+.overlay .credit { position: absolute; bottom: 10px; left: 12px; right: 12px; margin: 0; text-align: center; font-size: 11px; line-height: 1.5;
+  color: rgba(255,255,255,.72); text-shadow: 0 1px 6px rgba(40,30,60,.6); }
+.overlay .credit a { color: inherit; }
+.buttons button { font: inherit; font-size: 18px; padding: 11px 40px; margin: 0 10px; border-radius: 999px; border: 2px solid #fff;
+  background: rgba(255,255,255,.16); color: #fff; cursor: pointer; letter-spacing: .15em; }
+.buttons button:hover { background: rgba(255,255,255,.34); }
+
+/* HUD */
+#hud { position: fixed; inset: 0; pointer-events: none; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.55); z-index: 5; }
+#clock { position: absolute; top: 16px; right: 22px; font-size: 22px; letter-spacing: .1em; }
+#place { position: absolute; top: 16px; left: 22px; font-size: 16px; opacity: .95; }
+#toast { position: absolute; bottom: 92px; width: 100%; text-align: center; font-size: 18px; opacity: 0; transition: opacity .6s; }
+#toast.show { opacity: 1; }
+#help { position: absolute; bottom: 14px; left: 20px; font-size: 13px; line-height: 1.6; background: rgba(30,40,60,.28); padding: 8px 12px; border-radius: 10px; }
+#help .credit { font-size: 10.5px; opacity: .7; margin-top: 2px; }
+#goto { position: absolute; top: 56px; left: 20px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
+#goto button { font: inherit; font-size: 14px; text-align: left; padding: 6px 14px; border: 0; border-radius: 8px; background: rgba(255,255,255,.82); color: #2b3150; cursor: pointer; }
+#goto button:hover { background: #fff; }
+body.photo #hud, body.photo #sub, body.photo #prompt { display: none; }
+body.story #help, body.story #place { display: none; }
+
+/* cinematic */
+#bars div { position: fixed; left: 0; right: 0; height: 0; background: #000; transition: height 1.6s ease; z-index: 6; }
+#bars div:first-child { top: 0; } #bars div:last-child { bottom: 0; }
+body.cine #bars div { height: 9vh; }
+#fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 7; transition: opacity 1.5s; }   /* under subtitles/notes/prompts (8) */
+#chapter { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; opacity: 0; transition: opacity 2s; pointer-events: none; z-index: 9; text-shadow: 0 2px 16px rgba(0,0,0,.6); }
+#chapter.show { opacity: 1; }
+#chapter .jp { font-family: var(--serif); font-size: 44px; letter-spacing: .3em; }
+#chapter .en { font-size: 18px; letter-spacing: .35em; margin-top: 10px; font-weight: 300; }
+#chapter .meta { font-size: 13px; opacity: .8; margin-top: 18px; letter-spacing: .2em; }
+#sub { position: fixed; left: 0; right: 0; bottom: 11vh; text-align: center; color: #fff; z-index: 8; pointer-events: none;
+  opacity: 0; transition: opacity .9s; text-shadow: 0 1px 3px rgba(0,0,0,.9), 0 0 14px rgba(0,0,0,.5); }
+#sub.show { opacity: 1; }
+#sub .q { font-family: var(--serif); font-size: 26px; letter-spacing: .12em; }
+#sub .t { font-size: 17px; margin-top: 6px; opacity: .95; }
+#sub .q:empty, #sub .z:empty, #sub .t:empty { display: none; }
+#sub .z { font-family: var(--serif); font-size: 18px; margin-top: 4px; opacity: .92; letter-spacing: .08em; }
+#note { position: fixed; right: 7vw; top: 50%; transform: translateY(-50%) rotate(-2deg); z-index: 8; pointer-events: none;
+  opacity: 0; transition: opacity 1.2s, transform 1.2s; }
+#note.show { opacity: 1; transform: translateY(-50%) rotate(-3deg); }
+#note .page { width: 300px; min-height: 180px; padding: 26px 28px 22px 44px; background:
+  repeating-linear-gradient(180deg, #fffdf6 0 31px, #c9d8ee 31px 32px); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  position: relative; color: #2a2f4a; font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", var(--serif); font-size: 22px; line-height: 32px; }
+#note .page::before { content: ''; position: absolute; left: 30px; top: 0; bottom: 0; width: 2px; background: #f0a0a8; }
+#note .page .small { font-size: 15px; opacity: .75; }
+#prompt { position: fixed; bottom: 4vh; width: 100%; text-align: center; color: #fff; font-size: 15px; letter-spacing: .1em; z-index: 8;
+  opacity: 0; transition: opacity .8s; pointer-events: none; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+#prompt.show { opacity: .9; animation: breathe 2.4s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .45; } }
+#cards { position: fixed; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center; background: #0d0f1a; }
+#cards.show { display: flex; }
+#cards .card { position: absolute; width: 46vw; background: #fbf8f0; padding: 14px 14px 46px; box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  opacity: 0; transition: opacity 2s, transform 6s ease-out; }
+#cards .card img { width: 100%; display: block; }
+#cards .card .cap { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; color: #3a3a4a; font-family: var(--serif); font-size: 17px; }
+#cards .end { position: absolute; color: #fff; text-align: center; font-family: var(--serif); opacity: 0; transition: opacity 3s; line-height: 2; }
+
+/* ---- touch & small screens ---- */
+#app canvas { touch-action: none; }
+body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.touch-hint { display: none; }
+body.touch .touch-hint { display: inline; }
+#joy { position: fixed; width: 110px; height: 110px; margin: -55px 0 0 -55px; border-radius: 50%; z-index: 6; pointer-events: none;
+  border: 2px solid rgba(255,255,255,.55); background: rgba(255,255,255,.12); opacity: 0; transition: opacity .2s; }
+#joy.show { opacity: 1; }
+#joy div { position: absolute; left: 33px; top: 33px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.7); }
+#touchbar { position: fixed; right: max(12px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); z-index: 11;
+  display: none; flex-direction: column-reverse; gap: 10px; }
+body.touch.story #touchbar, body.touch.wander #touchbar { display: flex; }   /* not on the title screen */
+#touchbar button { width: 52px; height: 52px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.7); background: rgba(30,35,60,.35);
+  color: #fff; font-size: 22px; padding: 0; }
+#touchbar button.act { width: 64px; height: 64px; font-size: 26px; }
+#touchbar .story-only, #touchbar .wander-only { display: none; }
+body.story #touchbar .story-only, body.wander #touchbar .wander-only { display: block; }
+body.touch #help { display: none; }
+body.touch #toast { bottom: 26vh; }
+
+@media (max-width: 700px), (max-height: 500px) {
+  .title-card { padding: 0 18px; }
+  .title-card .jp { font-size: clamp(30px, 9vw, 58px); letter-spacing: .15em; }
+  .title-card h1 { font-size: clamp(16px, 4.6vw, 30px); letter-spacing: .18em; }
+  .title-card .sub { font-size: 13px; margin: 10px 0 20px; }
+  .buttons button { font-size: 16px; padding: 10px 26px; margin: 6px; }
+  #chapter .jp { font-size: clamp(26px, 8vw, 44px); letter-spacing: .15em; text-align: center; }
+  #chapter .en { font-size: 13px; letter-spacing: .2em; text-align: center; }
+  #chapter .meta { font-size: 11px; text-align: center; padding: 0 16px; }
+  #sub { bottom: 13vh; padding: 0 76px 0 14px; }
+  #sub .q { font-size: clamp(17px, 4.6vw, 26px); }
+  #sub .t { font-size: 14px; }
+  #sub .z { font-size: 15px; }
+  #note { right: 50%; transform: translate(50%, -50%) rotate(-2deg); top: 38%; }
+  #note.show { transform: translate(50%, -50%) rotate(-3deg); }
+  #note .page { width: min(300px, 74vw); font-size: 19px; padding: 20px 20px 18px 38px; }
+  #clock { font-size: 18px; top: 10px; right: 14px; } #place { font-size: 13px; top: 12px; left: 14px; }
+  #goto { top: 40px; left: 10px; } #goto button { font-size: 13px; padding: 5px 10px; }
+  #cards .card { width: 82vw; }
+  body.cine #bars div { height: 6vh; }
+  .overlay .credit { font-size: 9.5px; bottom: 4px; }
+}
+#stats { position: fixed; left: 50%; top: 8px; transform: translateX(-50%); z-index: 30; font: 12px monospace; color: #fff; background: rgba(0,0,0,.45); padding: 3px 8px; border-radius: 6px; pointer-events: none; }
