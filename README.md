@@ -1,36 +1,38 @@
-# 杩庣潃闃冲厜鐩涘ぇ閫冧骸 路 A Grand Escape into the Sun
+# 迎着阳光盛大逃亡 · A Grand Escape into the Sun
 
-A fan tribute to *Dragon Raja* III (榫欐棌, by Jiang Nan), Chapter 10. It is one day at **姊呮触瀵?Baishinji** in Matsuyama,
+A fan tribute to *Dragon Raja* III (龙族, by Jiang Nan), Chapter 10. It is one day at **梅津寺 Baishinji** in Matsuyama,
 rebuilt in 3D from real map and elevation data. It runs offline in the browser, on desktop and on phones.
 
 **v0.1-alpha**, the first public build. What changed is in [`CHANGELOG.md`](CHANGELOG.md).
 
-銆婇緳鏃廔II銆嬬鍗佺珷銆岃繋鐫€闃冲厜鐩涘ぇ閫冧骸銆嶇殑鍚屼汉鑷存暚浣滃搧锛氳矾鏄庨潪甯︾潃缁樻ⅷ琛ｉ€冨埌鏉惧北姊呮触瀵虹殑閭ｄ竴澶╋紝
-鐢ㄧ湡瀹炲湴褰笌鍦板浘鏁版嵁鍦ㄦ祻瑙堝櫒閲岄噸寤恒€傜绾胯繍琛岋紝鐢佃剳鍜屾墜鏈洪兘鑳界帺銆?
+《龙族III》第十章「迎着阳光盛大逃亡」的同人致敬作品：路明非带着绘梨衣逃到松山梅津寺的那一天，
+用真实地形与地图数据在浏览器里重建。离线运行，电脑和手机都能玩。
+
 ![Baishinji station at sunset](docs/screenshots/station-sunset.jpg)
 
 ## Play
 **Download this folder and double-click `index.html`.** It needs no server, no internet and no install. It also
 works from GitHub Pages. If it runs slowly, open `index.html?lite`.
 
-涓嬭浇鍚庡弻鍑?`index.html` 鍗冲彲锛堟棤闇€鏈嶅姟鍣ㄦ垨缃戠粶锛夈€傚鏋滃崱椤匡紝璇锋墦寮€ `index.html?lite`銆?
+下载后双击 `index.html` 即可（无需服务器或网络）。如果卡顿，请打开 `index.html?lite`。
+
 - **Story** (about 15 minutes): a guided, first-person walk through the chapter, from the empty lot at 17:30 to the
-  last train at 21:45. Press Space (or tap) at the prompts, N (鈴? to skip a scene, Esc to leave.
+  last train at 21:45. Press Space (or tap) at the prompts, N (⏭) to skip a scene, Esc to leave.
 - **Wander**: walk the town freely, at any time of day and in any weather.
 
 | Desktop | Touch | Action |
 |---|---|---|
 | W A S D / arrows, Shift | left-thumb joystick (push fully to run) | walk / run |
 | mouse drag, wheel | right-thumb drag | look, zoom |
-| E | 鉁?| sit (benches, the rock) / continue in the story |
-| G | 馃搷 | go to a place |
-| 1鈥?, T | 馃寳 | time of day, time speed |
-| R / F | 鈽?/ 馃尗 | drizzle / sea fog |
+| E | ✋ | sit (benches, the rock) / continue in the story |
+| G | 📍 | go to a place |
+| 1–4, T | 🌗 | time of day, time speed |
+| R / F | ☔ / 🌫 | drizzle / sea fog |
 | P, M, H | | photo mode, mute, help |
 
 ## What's in it
 - **The real place.**
-  - Terrain from the GSI 5 m elevation model (about 2 脳 2 km), plus a 48 km far field with the Inland Sea islands.
+  - Terrain from the GSI 5 m elevation model (about 2 × 2 km), plus a 48 km far field with the Inland Sea islands.
   - Roads, buildings and the railway from OpenStreetMap.
   - The real sun and moon for Saturday, 27 April 2013.
 - **The novel's places on the real hill:**
@@ -41,7 +43,7 @@ works from GitHub Pages. If it runs slowly, open `index.html?lite`.
   - the Ferris wheel that is no longer there.
 - **The station, modelled in detail from photos:**
   - brick-faced platforms with tactile strips and white canopies;
-  - the slate-roofed station house with its 銆屾 娲?瀵?椐呫€?gable;
+  - the slate-roofed station house with its 「梅 津 寺 駅」 gable;
   - the level crossing with its concrete slabs, barriers and X-signals;
   - the diamond-grid sea wall and the beach steps;
   - mercury lamps whose light pools glint on the wet platform in the rain;
@@ -49,7 +51,7 @@ works from GitHub Pages. If it runs slowly, open `index.html?lite`.
 - **No character models yet.** You see through Lu Mingfei's eyes. Erii is there through her notebook, her lines and
   what she leaves behind.
 - **Subtitles** are in Chinese with English below. Lines spoken in Japanese in the scene (the shopkeeper, the
-  station announcements, 銇曘倛銇倝) stay in Japanese, with Chinese and English underneath.
+  station announcements, さよなら) stay in Japanese, with Chinese and English underneath.
 - **Original music** and ambience, synthesized live with WebAudio.
 
 | | |
@@ -101,9 +103,9 @@ This is an early build. It works from start to end, but some things are still to
 ## Credits and licences
 - Code: MIT. See [`LICENSE`](LICENSE).
 - Third-party parts keep their own terms. See [`NOTICE.md`](NOTICE.md):
-  - three.js r149 漏 2010-2023 three.js authors (MIT);
-  - map data 漏 [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL 1.0). `js/data/osm.js` and
+  - three.js r149 © 2010-2023 three.js authors (MIT);
+  - map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL 1.0). `js/data/osm.js` and
     `js/data/rail.js` are derived databases under the ODbL;
-  - elevation: 鍑哄吀锛氬浗鍦熷湴鐞嗛櫌 妯欓珮銈裤偆銉紙鍔犲伐銇椼仸浣滄垚锛? The sea depth is invented.
-- **Fan work:** non-commercial and unofficial. *Dragon Raja* (榫欐棌) is by Jiang Nan (姹熷崡). Iyotetsu, Baishinji and
-  the other real places and names belong to their owners. 鏈綔涓洪潪鍟嗕笟鍚屼汉浣滃搧锛屼笌鍘熶綔鍙婄浉鍏虫潈鍒╂柟鏃犲叧銆?
+  - elevation: 出典：国土地理院 標高タイル（加工して作成）. The sea depth is invented.
+- **Fan work:** non-commercial and unofficial. *Dragon Raja* (龙族) is by Jiang Nan (江南). Iyotetsu, Baishinji and
+  the other real places and names belong to their owners. 本作为非商业同人作品，与原作及相关权利方无关。
