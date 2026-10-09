@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+- **Town buildings built in Blender:** a library of 21 Japanese seaside-town buildings made by our own Blender Python
+  scripts (`tools/town_*.py`): gable, hip and shed-roofed houses, old one-storey houses with an engawa, a narrow
+  wooden townhouse, shops with roll shutters or glass fronts and awnings, two-storey apartments with an open corridor
+  and a steel stair, a three-storey block, a warehouse and a garage. They have wavy silver-grey kawara roofs with
+  ridges and onigawara, real recessed windows with sashes, rain-shutter boxes, lattices, balconies with railings and
+  laundry, skirt roofs, gutters and downpipes, AC units, TV antennas and rooftop solar water heaters.
+- **Ambient occlusion baked with Cycles** into the vertex colours: soft shade under the eaves, inside the window
+  reveals and under balconies, at no cost while playing.
+- **Three levels of detail** (`js/models.js`, data in `js/data/models_town.js`): the near level switches per house
+  in the shader, so nothing pops or leaves a hole as you walk; far houses keep their roof silhouettes, ridges and
+  windows. Every house gets its own wall, roof and sash colours.
+- **Houses on slopes** now stand on a concrete or stone podium with the floor at the uphill corner, instead of
+  sinking into the hill. Houses on the front row of a street get a block wall with a gate.
+
 ## v0.2-alpha (2026-10-05)
 - **The passenger crossing (構内踏切):** a walkway across both tracks at the platforms' north ends, as in the photos,
   with crossing panels, tactile blocks, two 「とまれ」 posts whose red lamps blink with the level crossing, and two

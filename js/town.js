@@ -103,7 +103,15 @@
     scene.add(m); C.outline(m, 0.05);
     return gmin + h;
   }
-  function placeHouse(scene, x, z, w, d, rot, floors, seed) {
+  // Blender-built library (models.js): variant fitted to the footprint, floor at the uphill corner on a podium
+  function placeHouse(scene, x, z, w, d, rot, floors, seed, opts = {}) {
+    if (C.Town3D) {
+      const T3 = C.Town3D, v = opts.variant || T3.choose(w, d, { kinds: opts.kinds || ['house'], style: opts.style || 'any', seed });
+      const h = T3.add(v, x, z, w, d, rot, seed, opts);
+      mark(x, z, Math.max(h.w, h.d) / 2 + 1);
+      if (opts.wall && v.k === 'house') frontWall(scene, h, opts.wall);
+      return h;
+    }
     const hs = C.makeTownHouse({ w, d, floors, seed });
     const g = hs.group; let gmin = 1e9;
     for (const [a, b] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]]) {
@@ -115,6 +123,27 @@
     C.addCollider(x, z, w / 2, d / 2, rot); mark(x, z, Math.max(w, d) / 2 + 1);
     return g;
   }
+  // concrete-block wall with a gate in front of a house (local +Z = the street side), stepped down slopes
+  function frontWall(scene, h, gap) {
+    const c = Math.cos(h.rot), s = Math.sin(h.rot), zl = h.d / 2 + gap - 0.3;
+    if (zl - h.d / 2 < 0.7) return;
+    const W = (x, z) => [h.x + x * c + z * s, h.z - x * s + z * c];
+    const g0 = -h.w / 2 + 0.35 * h.sx, g1 = -h.w / 2 + 1.75 * h.sx;   // the gate opposite the door
+    const block = 0xa8a69e, cap = 0x8c8a84, post = [0xb9b3a6, 0x9a6b52, 0xc8c2b4][h.seed % 3];
+    for (const [a, b] of [[-h.w / 2 - 0.3, g0], [g1, h.w / 2 + 0.3]]) {
+      const L = b - a; if (L < 0.4) continue;
+      const n = Math.max(1, Math.ceil(L / 2.4));
+      for (let i = 0; i < n; i++) {
+        const xa = a + i * L / n, xb = a + (i + 1) * L / n, xm = (xa + xb) / 2, [wx, wz] = W(xm, zl);
+        const g = Math.min(C.groundH(...W(xa, zl)), C.groundH(...W(xb, zl))), top = Math.max(g + 1.15, Math.min(h.y + 1.1, g + 1.9));
+        C.vcBox(scene, L / n + 0.01, top - g + 0.3, 0.12, block, wx, (top + g - 0.3) / 2, wz, h.rot);
+        C.vcBox(scene, L / n + 0.03, 0.06, 0.17, cap, wx, top + 0.03, wz, h.rot, false);
+      }
+      const [cx, cz] = W((a + b) / 2, zl); C.addCollider(cx, cz, L / 2, 0.12, h.rot);
+    }
+    for (const x of [g0 - 0.15, g1 + 0.15]) { const [wx, wz] = W(x, zl), g = C.groundH(wx, wz); C.vcBox(scene, 0.3, 1.75, 0.3, post, wx, g + 0.6, wz, h.rot); C.addCollider(wx, wz, 0.18, 0.18, h.rot); }
+  }
+  const polyArea = (P) => { let a = 0; for (let i = 0; i < P.length; i++) { const [x0, z0] = P[i], [x1, z1] = P[(i + 1) % P.length]; a += x0 * z1 - x1 * z0; } return Math.abs(a) / 2; };
   function buildOSMBuildings(scene) {
     let i = 0;
     for (const b of O.buildings) {
@@ -122,11 +151,17 @@
       const r = minRect(P); i++;
       if (C.isReserved(r.cx, r.cz, 1)) continue;
       if (b.k === 'train_station') continue;
+      const fill = polyArea(P) / r.area;
+      if (C.Town3D && r.area > 150 && r.area <= 900 && fill > 0.78 && b.lv <= 3) {   // rectangular block: apartment / warehouse
+        const swap = r.w < r.d, w = swap ? r.d : r.w, d = swap ? r.w : r.d;
+        placeHouse(scene, r.cx, r.cz, w, d, r.rot + (swap ? Math.PI / 2 : 0), 2, i * 13 + 5, { kinds: w * d > 330 && i % 2 ? ['shed'] : ['apt'] });
+        b.rect = r; continue;
+      }
       if (r.area > 260 || b.lv > 2) {
         const top = flatBuilding(scene, P, b.h || Math.max(b.lv, r.area > 900 ? 3 : 2) * 3.4, i);
         C.addCollider(r.cx, r.cz, r.w / 2, r.d / 2, r.rot); mark(r.cx, r.cz, Math.max(r.w, r.d) / 2);
         r.top = top; b.rect = r;
-      } else { placeHouse(scene, r.cx, r.cz, Math.max(4, r.w), Math.max(4, r.d), r.rot, r.area > 110 ? 2 : (i % 3 ? 2 : 1), i); b.rect = r; }
+      } else { placeHouse(scene, r.cx, r.cz, Math.max(4, r.w), Math.max(4, r.d), r.rot, r.area > 110 ? 2 : (i % 3 ? 2 : 1), i, { kinds: r.area < 30 ? ['shed'] : ['house', 'house', 'shop'] }); b.rect = r; }
     }
   }
   // fill the built-up areas the sparse OSM data leaves empty: houses facing the streets
@@ -139,12 +174,14 @@
         const [x0, z0] = P[i], [x1, z1] = P[i + 1], L = Math.hypot(x1 - x0, z1 - z0); if (L < 6) continue;
         const ux = (x1 - x0) / L, uz = (z1 - z0) / L;
         for (let t = 4; t < L - 4; t += C.range(9, 13)) for (const side of [1, -1]) for (const row of [0, 1]) {
-          const w = C.range(6.5, 9.5), d = C.range(6.5, 9), off = r.w / 2 + 1.5 + d / 2 + row * (d + C.range(2, 4));
+          const roll = C.rand(), apt = C.Town3D && row === 0 && roll < 0.06, shop = C.Town3D && row === 0 && !apt && roll < 0.14 && r.k !== 'service';
+          const w = apt ? C.range(13, 17) : C.range(6.5, 9.5), d = apt ? C.range(8.3, 9) : C.range(6.5, 9), off = r.w / 2 + (shop ? 1.2 : 1.5) + d / 2 + row * (d + C.range(2, 4));
           const x = x0 + ux * t - uz * off * side, z = z0 + uz * t + ux * off * side;
           const h = C.groundH(x, z);
           if (h < 1.5 || h > 75 || C.urbanAt(x, z) < 0.3 || C.slopeAt(x, z) > 0.32 || C.isReserved(x, z, 6) || busy(x, z, Math.max(w, d) / 2)) continue;
           if (C.rand() < 0.12) continue;
-          placeHouse(scene, x, z, w, d, rotFacing(uz * side, -ux * side) + Math.PI, C.rand() < 0.7 ? 2 : 1, n++ * 7 + 3);
+          placeHouse(scene, x, z, w, d, rotFacing(uz * side, -ux * side) + Math.PI, C.rand() < 0.7 ? 2 : 1, n++ * 7 + 3,
+            { kinds: apt ? ['apt'] : shop ? ['shop'] : ['house'], wall: row === 0 && !apt && !shop ? 1.5 : 0 });
         }
       }
     }
@@ -330,7 +367,7 @@
           sh.group.position.set(x, C.lerp(a.y, b.y, f), z); sh.group.rotation.y = rot; scene.add(sh.group); out.shops.push(sh);
           if (sh.update) C.onUpdate((dt, tt) => sh.update(dt, tt));
           C.addCollider(x, z, 3, 3.5, rot); mark(x, z, 4);
-        } else if (C.rand() < 0.82) placeHouse(scene, x, z, C.range(6, 7.5), C.range(6, 7), rot, C.rand() < 0.6 ? 2 : 1, i * 31 + (t | 0));
+        } else if (C.rand() < 0.82) placeHouse(scene, x, z, C.range(6, 7.5), C.range(6, 7), rot, C.rand() < 0.6 ? 2 : 1, i * 31 + (t | 0), { style: 'old', kinds: ['house', 'house', 'shop'] });
         else out.sakura.push({ x: cx + nx * 6, y: C.groundH(cx + nx * 6, cz + nz * 6), z: cz + nz * 6 });
       }
       for (let t = 0; t <= L; t += 3) for (const k of [0, 1]) {
@@ -392,6 +429,7 @@
     for (const r of O.roads) if (['residential', 'unclassified'].includes(r.k)) { const P = pts(r.p); let near = P.some(([x, z]) => Math.hypot(x, z + 100) < 260); if (near) poleLine(scene, P, 28, C.rand() < 0.5); }
     buildBreakwaters(scene);
     const trees = buildForest(scene);
+    if (C.Town3D) C.Town3D.build(scene);
     if (C.makeVending) for (const [x, z, r] of [[A.townStreet[1].x + 3.4, A.townStreet[1].z, -1.6]]) { const v = C.makeVending(0xd8402e), g = v.group || v; g.position.set(x, C.groundH(x, z), z); g.rotation.y = r; scene.add(g); }
     console.log('town', { filled, trees, ms: Math.round(performance.now() - t0) });
     C.town = Object.assign({ lane }, places);

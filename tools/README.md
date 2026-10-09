@@ -25,6 +25,23 @@ Notes:
 - Running both scripts on the 2026-10-04 data reproduces the committed files byte-for-byte.
 - The public Overpass servers are often busy (HTTP 504). Wait a few minutes and run `python fetch_data.py --osm-only` again.
 
+## Town buildings (Blender)
+
+`town_build.py` builds the library of town buildings with Blender 3.4 (headless, CPU only) and writes
+`../js/data/models_town.js`. The geometry is generated in plain Python (`town_lib.py`: walls with real window openings,
+kawara roofs, ridges, railings…; `town_buildings.py`: the house, shop, apartment and warehouse types and the variant
+list). Blender bakes ambient occlusion with Cycles into each face corner, and the script packs everything as base64
+(Int16 positions in millimetres, a shared colour palette, AO, the part to recolour, the window id) in three levels of
+detail, plus an inverted-hull outline shell.
+
+```
+blender -b --python town_build.py -- --samples 16                       # rebuild ../js/data/models_town.js
+blender -b --python town_build.py -- --only hip2_skirt --preview out.png  # render a Cycles preview of some variants
+```
+
+The output is deterministic: the same scripts give the same file. The game (`../js/models.js`) fits a variant to each
+footprint, scales it a little, picks the colours per house and switches the levels of detail.
+
 ## Sources and licences
 - Elevation: 出典：国土地理院 標高タイル（加工して作成）. Source: Geospatial Information Authority of Japan (GSI)
   elevation tiles, processed. Used under the [GSI terms of use](https://maps.gsi.go.jp/development/ichiran.html).

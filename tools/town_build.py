@@ -1,0 +1,176 @@
+# Builds the town building library in Blender, bakes ambient occlusion with Cycles into the vertex colours,
+# and writes js/data/models_town.js (plain script data, works from file://).
+#
+#   blender -b --python tools/town_build.py -- [--only name,name] [--preview out.png] [--samples 24]
+#
+# Geometry comes from town_buildings.py / town_lib.py (pure Python); Blender is used for the AO bake and previews.
+import bpy, sys, os, time, json, base64, struct, math
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+sys.dont_write_bytecode = True
+import town_buildings as B
+
+ROOT = os.path.normpath(os.path.join(HERE, '..'))
+OUT = os.path.join(ROOT, 'js', 'data', 'models_town.js')
+argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
+def arg(name, default=None):
+    return argv[argv.index(name) + 1] if name in argv else default
+ONLY = set(arg('--only').split(',')) if arg('--only') else None
+PREVIEW = arg('--preview')
+SAMPLES = int(arg('--samples', '24'))
+Q = 1000.0   # positions in millimetres (Int16: +-32.7 m)
+
+
+def reset():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    sc = bpy.context.scene
+    sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = SAMPLES
+    sc.render.bake.target = 'VERTEX_COLORS'
+    w = bpy.data.worlds.new('w'); sc.world = w
+    w.light_settings.distance = 2.5      # AO reach: eaves, corners, balconies; not the whole street
+    bpy.ops.mesh.primitive_plane_add(size=80, location=(0, 0, 0))   # the ground the house stands on
+    g = bpy.context.object; g.name = 'ground'
+    g.data.materials.append(bpy.data.materials.new('g'))
+    return sc
+
+
+def to_blender(p): return (p[0], -p[2], p[1])
+
+
+def make_obj(name, faces):
+    verts, polys = [], []
+    for pts, col, part, win in faces:
+        i0 = len(verts)
+        verts += [to_blender(p) for p in pts]
+        polys.append(list(range(i0, i0 + len(pts))))
+    me = bpy.data.meshes.new(name)
+    me.from_pydata(verts, [], polys)
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.data.materials.append(bpy.data.materials.new(name + '_m'))
+    return ob
+
+
+def bake_ao(ob):
+    me = ob.data
+    ca = me.color_attributes.new('ao', 'FLOAT_COLOR', 'CORNER')
+    me.attributes.active_color = ca
+    bpy.ops.object.select_all(action='DESELECT')
+    ob.select_set(True); bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.bake(type='AO')
+    d = me.color_attributes['ao'].data
+    return [d[i].color[0] for i in range(len(d))]
+
+
+PAL = {}   # shared colour palette (index -> rgb bytes)
+
+
+def pal_index(rgb):
+    if rgb not in PAL:
+        PAL[rgb] = len(PAL)
+        assert len(PAL) <= 256, 'palette overflow'
+    return PAL[rgb]
+
+
+def export_lod(faces, ao, ink):
+    """per face corner (flat shading): p = Int16 xyz (mm); c = Uint8 [palette index, ao, part<<5 | window]; f = corners per face"""
+    P, Cc, Fs = [], [], []
+    li = 0
+    c8 = lambda v: int(round(min(1, max(0, v)) * 255))
+    for pts, col, part, win in faces:
+        rgb = (c8(col[0]), 0, 0) if part not in (0, 5) else (c8(col[0]) & 0xfc, c8(col[1]) & 0xfc, c8(col[2]) & 0xfc)
+        ci = pal_index(rgb)
+        for p in pts:
+            P += [int(round(c * Q)) for c in p]
+            Cc += [ci, c8(ao[li]), (part << 5) | (win & 31)]
+            li += 1
+        Fs.append(len(pts))
+    kp, kf = [], []
+    for q in ink:
+        for p in q: kp += [int(round(c * Q)) for c in p]
+        kf.append(len(q))
+    b64 = lambda fmt, arr: base64.b64encode(struct.pack('<%d%s' % (len(arr), fmt), *arr)).decode()
+    assert max(Fs) < 256 and len(P) // 3 < 65536
+    out = dict(p=b64('h', P), c=b64('B', Cc), f=b64('B', Fs), nv=len(P) // 3, nt=sum(n - 2 for n in Fs))
+    if kp: out.update(kp=b64('h', kp), kf=b64('B', kf))
+    return out
+
+
+def main():
+    t0 = time.time()
+    lib = []
+    for v in B.VARIANTS:
+        if ONLY and v['n'] not in ONLY: continue
+        entry = dict(n=v['n'], k=v['k'], st=v['st'], lods=[])
+        for lod in range(3):
+            reset()
+            M, info = B.build_variant(v, lod)
+            ob = make_obj(v['n'], M.faces)
+            ao = bake_ao(ob)
+            entry.update(info)
+            entry['lods'].append(export_lod(M.faces, ao, M.ink))
+        lib.append(entry)
+        print('built', v['n'], [l['nt'] for l in entry['lods']], 'tris', round(time.time() - t0, 1), 's', flush=True)
+    if False:
+        # merge into the existing library
+        src = open(OUT).read()
+        old = json.loads(src[src.index('{"q"'):src.rindex('};') + 1])
+        names = {e['n'] for e in lib}
+        lib = [e if e['n'] not in names else next(x for x in lib if x['n'] == e['n']) for e in old['list']] + [e for e in lib if e['n'] not in {x['n'] for x in old['list']}]
+    data = dict(q=Q, pal=base64.b64encode(bytes([c for rgb in sorted(PAL, key=PAL.get) for c in rgb])).decode(), list=lib)
+    with open(OUT, 'w') as f:
+        f.write('// Town building library: generated by tools/town_build.py (Blender + Cycles-baked AO). Do not edit.\n')
+        f.write('// pal = Uint8 rgb palette. Per LOD, one vertex per face corner: p = Int16 xyz (mm), c = Uint8 [palette, ao, part<<5|window],\n// f = corners per face (convex polygons, fan-triangulated), kp/kf = the outline shell. Parts: 0 fixed, 1 wall, 2 wall 2, 3 roof, 4 sash, 5 glass, 6 wood.\n')
+        f.write('(function(C){C.MODELS=C.MODELS||{};C.MODELS.town=' + json.dumps(data, separators=(',', ':')) + ';})(window.CITY);\n')
+    print('wrote', OUT, os.path.getsize(OUT) // 1024, 'KB in', round(time.time() - t0, 1), 's')
+    if PREVIEW: preview(PREVIEW)
+
+
+def preview(path):
+    """a lineup of all LOD0 variants with base colour x AO (Workbench, vertex colours) for checking"""
+    reset()
+    sc = bpy.context.scene
+    x = 0.0
+    for v in B.VARIANTS:
+        if ONLY and v['n'] not in ONLY: continue
+        lod = int(arg('--lod', '0'))
+        M, info = B.build_variant(v, lod)
+        ob = make_obj(v['n'], M.faces)
+        ao = bake_ao(ob)
+        me = ob.data
+        ca = me.color_attributes.new('col', 'FLOAT_COLOR', 'CORNER')
+        li = 0
+        pal = {1: (0.90, 0.87, 0.80), 2: (0.78, 0.72, 0.62), 3: (0.50, 0.53, 0.57), 4: (0.80, 0.80, 0.78), 6: (0.55, 0.42, 0.32)}
+        for pts, col, part, win in M.faces:
+            for _ in pts:
+                c = col if part in (0, 5) else tuple(min(1, pal[part][i] * col[0] / 0.8) for i in range(3))
+                a = 0.35 + 0.65 * ao[li]
+                ca.data[li].color = (c[0] * a, c[1] * a, c[2] * a, 1)
+                li += 1
+        me.attributes.active_color = ca
+        ob.location = (x + info['w'] / 2, 0, 0)
+        x += info['w'] + 3
+    bpy.data.objects['ground'].scale = (8, 1, 1)
+    cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); sc.collection.objects.link(cam)
+    cx = x / 2
+    cam.location = (cx, -x * 0.95, x * 0.32); cam.rotation_euler = (math.radians(73), 0, 0)
+    cam.data.lens = 40; sc.camera = cam
+    # Cycles preview (no OpenGL here): vertex colour (base x AO) as diffuse, a low sun and a pale sky
+    for ob in sc.objects:
+        if ob.type != 'MESH' or ob.name == 'ground': continue
+        m = ob.data.materials[0]; m.use_nodes = True; nt = m.node_tree
+        at = nt.nodes.new('ShaderNodeAttribute'); at.attribute_name = 'col'
+        nt.links.new(at.outputs['Color'], nt.nodes['Principled BSDF'].inputs['Base Color'])
+        nt.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.9
+    sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); sc.collection.objects.link(sun)
+    sun.data.energy = 3.0; sun.rotation_euler = (math.radians(50), 0, math.radians(-35))
+    sc.world.use_nodes = True; sc.world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.6, 0.7, 0.85, 1)
+    sc.world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.8
+    sc.cycles.samples = 16; sc.cycles.use_denoising = False; sc.view_settings.view_transform = 'Standard'
+    sc.render.resolution_x, sc.render.resolution_y = int(arg('--pw', '2400')), int(arg('--ph', '700'))
+    sc.render.filepath = path
+    bpy.ops.render.render(write_still=True)
+    print('preview', path)
+
+
+main()
