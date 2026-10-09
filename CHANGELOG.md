@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+- **Light that looks ray-traced (screen-space effects, `js/fx_rt.js`):** all built from the depth buffer of the
+  post-processing pass, and blended by the existing presets (day / golden / sunset / dusk / night / rain / memory).
+  - **Ambient occlusion:** soft, violet-tinted contact shade in corners, under eaves and along the foot of walls
+    (half resolution, depth-aware blur).
+  - **Reflections:** the near sea mirrors the shore, the station and the boats, smeared down like real water; in
+    the rain, flat ground (platforms, roads) gets patchy puddle reflections. Missed rays fall back to the sea's own
+    sky reflection or the sky colour.
+  - **God rays:** light scattering from the sun over the sky at golden hour and sunset.
+  - **Height fog / aerial perspective:** low haze over the sea and the valley, coloured from the sky and brighter
+    toward the sun; thicker in rain and fog.
+  - **Quality:** `?fx=off|low|high` (`medium` = low). High on desktop, off on phones and with `?lite`;
+    `CITY.fx.setTier()` switches at runtime. `?fxdebug=ao|ssr|rays|mark|fog` shows one effect's buffer.
+  - **Photo mode:** `CITY.fx.accumulate(16)` averages 16 sub-pixel-jittered frames into one clean still.
+
 ## v0.2-alpha (2026-10-05)
 - **The passenger crossing (構内踏切):** a walkway across both tracks at the platforms' north ends, as in the photos,
   with crossing panels, tactile blocks, two 「とまれ」 posts whose red lamps blink with the level crossing, and two
