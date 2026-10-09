@@ -14,6 +14,10 @@
   windows. Every house gets its own wall, roof and sash colours.
 - **Houses on slopes** now stand on a concrete or stone podium with the floor at the uphill corner, instead of
   sinking into the hill. Houses on the front row of a street get a block wall with a gate.
+- **Things to use (E):** vending machines by the shops and apartment blocks (a can drops with a clunk: mikan juice,
+  ramune, cold tea…), shop doorways to look into (the shrine-lane shops and the town shops each have a line), and
+  wooden benches under some shop awnings to sit on. The hint at the bottom of the screen says what E will do.
+- Utility poles stand at the road edge instead of inside the front yards.
 
 ## v0.2-alpha (2026-10-05)
 - **The passenger crossing (構内踏切):** a walkway across both tracks at the platforms' north ends, as in the photos,

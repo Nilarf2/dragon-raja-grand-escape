@@ -221,14 +221,15 @@ def house(spec, lod):
             c = ac if (i % 2 == 0 or lod == 2) else bc
             M.poly([(x0, 2.75, dw / 2 + 1.0), (x1, 2.75, dw / 2 + 1.0), (x1, 3.15, dw / 2), (x0, 3.15, dw / 2)], c, 0, facing=(0, 1, 0.4))
             M.poly([(x0, 2.75, dw / 2 + 1.0), (x0, 2.45, dw / 2 + 1.0), (x1, 2.45, dw / 2 + 1.0), (x1, 2.75, dw / 2 + 1.0)], c, 0, facing=(0, 0, 1))
-            M.poly([(x0, 2.75, dw / 2 + 1.0), (x1, 2.75, dw / 2 + 1.0), (x1, 3.15, dw / 2), (x0, 3.15, dw / 2)], (c[0] * 0.6, c[1] * 0.6, c[2] * 0.6), 0, facing=(0, -1, -0.4))
+            M.poly([(x0, 2.75, dw / 2 + 1.0), (x1, 2.75, dw / 2 + 1.0), (x1, 3.15, dw / 2), (x0, 3.15, dw / 2)], (c[0] * 0.85, c[1] * 0.85, c[2] * 0.85), 0, facing=(0, -1, -0.4))
         # signboard above the awning (kanban): a box with a frame and coloured 'letter' blocks
         sw = w * 0.7
-        M.box(0, 3.55, dw / 2 + 0.08, sw, 0.6, 0.12, bc if Rs.random() < 0.5 else ac, 0)
+        sc = bc if Rs.random() < 0.5 else ac
+        M.box(0, 3.55, dw / 2 + 0.08, sw, 0.6, 0.12, sc, 0)
         if lod <= 1:
             nl = Rs.randint(2, 4)
             for i in range(nl):
-                M.box(-sw * 0.3 + i * sw * 0.6 / max(1, nl - 1), 3.55, dw / 2 + 0.15, 0.36, 0.4, 0.02, C_DARK if Rs.random() < 0.6 else ac, 0)
+                M.box(-sw * 0.3 + i * sw * 0.6 / max(1, nl - 1), 3.55, dw / 2 + 0.15, 0.36, 0.4, 0.02, C_DARK if sc == bc else C_WHITE, 0)
         if lod == 0:   # crates of goods out front
             for i in range(Rs.randint(1, 3)): M.box(Rs.uniform(-w / 2 + 0.6, w / 2 - 0.6), 0.25, dw / 2 + 0.5, 0.6, 0.5, 0.45, (0.6, 0.45, 0.3), 0)
     # ---- engawa (old houses): veranda board along the front under the tall windows

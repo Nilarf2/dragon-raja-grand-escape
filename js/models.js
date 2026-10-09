@@ -209,7 +209,7 @@
         tiles.get(tk).list.push(h); cells.get(ck).list.push(h);
       }
       const mob = C.MOBILE, lite = /[?&]lite/.test(location.search);
-      const R0 = mob ? 45 : lite ? 55 : 70, R1 = mob ? 240 : 380;
+      const R0 = mob ? 45 : lite ? 55 : 62, R1 = mob ? 240 : 360;
       U.uR0.value = R0;
       const group = C.dynamic(new T.Group()); group.name = 'town3d'; scene.add(group);
       const mk = (geo, mat, shadow) => { const m = new T.Mesh(geo, mat); m.castShadow = m.receiveShadow = shadow; m.matrixAutoUpdate = false; group.add(m); release(geo); return m; };

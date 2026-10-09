@@ -110,6 +110,7 @@
       const h = T3.add(v, x, z, w, d, rot, seed, opts);
       mark(x, z, Math.max(h.w, h.d) / 2 + 1);
       if (opts.wall && v.k === 'house') frontWall(scene, h, opts.wall);
+      if (v.k === 'shop' || v.k === 'apt') shopExtras(scene, h);
       return h;
     }
     const hs = C.makeTownHouse({ w, d, floors, seed });
@@ -142,6 +143,27 @@
       const [cx, cz] = W((a + b) / 2, zl); C.addCollider(cx, cz, L / 2, 0.12, h.rot);
     }
     for (const x of [g0 - 0.15, g1 + 0.15]) { const [wx, wz] = W(x, zl), g = C.groundH(wx, wz); C.vcBox(scene, 0.3, 1.75, 0.3, post, wx, g + 0.6, wz, h.rot); C.addCollider(wx, wz, 0.18, 0.18, h.rot); }
+  }
+  // a vending machine by every shop and apartment block, a bench under some shop awnings, the doorway to look into
+  let nShop = 0;
+  function shopExtras(scene, h) {
+    const c = Math.cos(h.rot), s = Math.sin(h.rot), W = (x, z) => [h.x + x * c + z * s, h.z - x * s + z * c];
+    const shop = h.v.k === 'shop', [vx, vz] = W(shop ? h.w / 2 - 0.55 : -h.w / 2 + 0.6, h.d / 2 + 0.5);
+    if (C.makeVending && !C.isReserved(vx, vz, 0.5)) {
+      const v = C.makeVending([0xd8402e, 0x2f6fb5, 0xf2f0ea, 0x3a8a56][nShop % 4]), g = v.group || v;
+      g.position.set(vx, C.groundH(vx, vz), vz); g.rotation.y = h.rot; scene.add(g);
+      C.addCollider(vx, vz, 0.45, 0.42, h.rot); if (C.vendingUse) C.vendingUse(...W(shop ? h.w / 2 - 0.55 : -h.w / 2 + 0.6, h.d / 2 + 1.1));
+    }
+    if (shop) {
+      if (C.shopUse) C.shopUse(...W(0, h.d / 2 + 0.9), null, nShop);
+      if (nShop % 2 === 0) {   // a wooden bench under the awning
+        const [bx, bz] = W(-h.w / 2 + 1.3, h.d / 2 + 0.42), g = C.groundH(bx, bz), wood = 0x8a6a4c;
+        C.vcBox(scene, 1.5, 0.06, 0.38, wood, bx, g + 0.42, bz, h.rot);
+        for (const dx of [-0.6, 0.6]) { const [lx, lz] = W(-h.w / 2 + 1.3 + dx, h.d / 2 + 0.42); C.vcBox(scene, 0.06, 0.42, 0.32, 0x5e4634, lx, g + 0.2, lz, h.rot, false); }
+        (C.benches = C.benches || []).push({ world: [bx, bz], y: g });
+      }
+    }
+    nShop++;
   }
   const polyArea = (P) => { let a = 0; for (let i = 0; i < P.length; i++) { const [x0, z0] = P[i], [x1, z1] = P[(i + 1) % P.length]; a += x0 * z1 - x1 * z0; } return Math.abs(a) / 2; };
   function buildOSMBuildings(scene) {
@@ -232,13 +254,13 @@
   }
 
   // ---- utility poles + sagging wires along a polyline ----
-  function poleLine(scene, P, every = 24, lamp = false) {
+  function poleLine(scene, P, every = 24, lamp = false, side = 3.4) {
     const out = [];
     let acc = every;
     for (let i = 0; i < P.length - 1; i++) {
       const [x0, z0] = P[i], [x1, z1] = P[i + 1], L = Math.hypot(x1 - x0, z1 - z0);
       for (let t = acc; t < L; t += every) {
-        const nx = -(z1 - z0) / L, nz = (x1 - x0) / L, x = C.lerp(x0, x1, t / L) + nx * 3.4, z = C.lerp(z0, z1, t / L) + nz * 3.4;
+        const nx = -(z1 - z0) / L, nz = (x1 - x0) / L, x = C.lerp(x0, x1, t / L) + nx * side, z = C.lerp(z0, z1, t / L) + nz * side;
         out.push([x, C.groundH(x, z), z]);
       }
       acc = every - ((L - acc) % every);
@@ -365,6 +387,7 @@
         if (si < 8 && i < 3 && C.makeShopFront) {
           const sh = C.makeShopFront(shops[si % shops.length]); si++;
           sh.group.position.set(x, C.lerp(a.y, b.y, f), z); sh.group.rotation.y = rot; scene.add(sh.group); out.shops.push(sh);
+          if (C.shopUse) C.shopUse(x + Math.sin(rot) * 4.2, z + Math.cos(rot) * 4.2, shops[(si - 1) % shops.length]);
           if (sh.update) C.onUpdate((dt, tt) => sh.update(dt, tt));
           C.addCollider(x, z, 3, 3.5, rot); mark(x, z, 4);
         } else if (C.rand() < 0.82) placeHouse(scene, x, z, C.range(6, 7.5), C.range(6, 7), rot, C.rand() < 0.6 ? 2 : 1, i * 31 + (t | 0), { style: 'old', kinds: ['house', 'house', 'shop'] });
@@ -426,11 +449,11 @@
     buildOSMBuildings(scene);
     const filled = fillHouses(scene);
     // poles along the main town streets
-    for (const r of O.roads) if (['residential', 'unclassified'].includes(r.k)) { const P = pts(r.p); let near = P.some(([x, z]) => Math.hypot(x, z + 100) < 260); if (near) poleLine(scene, P, 28, C.rand() < 0.5); }
+    for (const r of O.roads) if (['residential', 'unclassified'].includes(r.k)) { const P = pts(r.p); let near = P.some(([x, z]) => Math.hypot(x, z + 100) < 260); if (near) poleLine(scene, P, 28, C.rand() < 0.5, r.w / 2 + 0.25); }
     buildBreakwaters(scene);
     const trees = buildForest(scene);
     if (C.Town3D) C.Town3D.build(scene);
-    if (C.makeVending) for (const [x, z, r] of [[A.townStreet[1].x + 3.4, A.townStreet[1].z, -1.6]]) { const v = C.makeVending(0xd8402e), g = v.group || v; g.position.set(x, C.groundH(x, z), z); g.rotation.y = r; scene.add(g); }
+    if (C.makeVending) for (const [x, z, r] of [[A.townStreet[1].x + 3.4, A.townStreet[1].z, -1.6]]) { const v = C.makeVending(0xd8402e), g = v.group || v; g.position.set(x, C.groundH(x, z), z); g.rotation.y = r; scene.add(g); C.addCollider(x, z, 0.45, 0.42, r); if (C.vendingUse) C.vendingUse(x + Math.sin(r) * 0.8, z + Math.cos(r) * 0.8); }
     console.log('town', { filled, trees, ms: Math.round(performance.now() - t0) });
     C.town = Object.assign({ lane }, places);
     return C.town;

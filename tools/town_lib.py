@@ -283,10 +283,12 @@ def roof_plane(M, rp, lod, tile, slab=0.12, eave_wave=True, col_factor=1.0, seam
                 u0, u1 = ua + prof[k] * cw, ua + prof[k + 1] * cw
                 h0, h1 = hfun(prof[k]), hfun(prof[k + 1])
                 M.poly([rp.P(u0, 0, h0), rp.P(u1, 0, h1), rp.P(u1, vmax, h1), rp.P(u0, vmax, h0)], rc, ROOF, facing=rp.N)
-                if eave_wave:   # the wavy eave edge (軒瓦 seen end-on)
+                if eave_wave and lod == 0:   # the wavy eave edge (軒瓦 seen end-on)
                     M.poly([rp.P(u0, 0, -slab), rp.P(u1, 0, -slab), rp.P(u1, 0, h1), rp.P(u0, 0, h0)], F(0.7 * col_factor), ROOF, facing=v_mul(rp.V, -1))
             if lod == 0 and rp.kl < 1e-6 and rp.kr < 1e-6:
                 pass
+        if lod == 1 and eave_wave:   # mid LOD: one flat eave strip instead of the wave
+            M.poly([rp.P(umin, 0, -slab), rp.P(umax, 0, -slab), rp.P(umax, 0, a), rp.P(umin, 0, a)], F(0.7 * col_factor), ROOF, facing=v_mul(rp.V, -1))
         if lod == 0:   # tile courses: a shallow step every 0.3 m up the slope, across the whole plane
             nv = int(rp.Vlen / 0.3)
             for j in range(1, nv):
@@ -552,7 +554,7 @@ def railing(M, x0, x1, y, z, lod, style, rnd, h=1.0, col=None, along='x'):
         return
     M.box((x0 + x1) / 2, y + h, z, L + 0.04, 0.06, 0.08, col, SASH)
     M.box((x0 + x1) / 2, y + 0.1, z, L, 0.04, 0.05, col, SASH)
-    step = 0.12 if lod == 0 else 0.3
+    step = 0.12 if lod == 0 else 0.5
     n = max(2, int(L / step))
     for i in range(n + 1):
         x = x0 + i * L / n

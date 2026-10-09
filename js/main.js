@@ -113,7 +113,7 @@
       case 'KeyP': document.body.classList.toggle('photo'); break;
       case 'KeyH': $('help').classList.toggle('hidden'); break;
       case 'KeyM': if (audio) toast(audio.toggleMute() ? 'Sound off' : 'Sound on'); break;
-      case 'KeyE': { const r = player.trySit(); if (r === 'sit') toast('You sit down and listen to the sea…', 3); break; }
+      case 'KeyE': { const r = player.trySit(); if (r === 'sit') toast('You sit down and listen to the sea…', 3); else if (r && r.msg) toast(r.msg, 5); break; }
       case 'Escape': menu.classList.add('hidden'); break;
     }
   });
@@ -186,7 +186,7 @@
       $('clock').textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
       $('place').textContent = env.mode === 'wander' ? C.placeName(player.pos) : '';
       if (env.mode === 'wander' && toastT <= 0) {
-        const msg = player.sitting ? 'E: stand up' : player.nearSeat() ? 'E: sit' : '';
+        const msg = player.hint ? player.hint() : player.sitting ? 'E: stand up' : player.nearSeat() ? 'E: sit' : '';
         $('toast').textContent = msg; $('toast').classList.toggle('show', !!msg);
       }
     }
