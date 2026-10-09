@@ -85,7 +85,7 @@
         let nx = d.nor[i * 3] / sx, ny = d.nor[i * 3 + 1], nz = d.nor[i * 3 + 2] / sz; const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
         nor[j] = Math.round((nx * c + nz * s) * 127); nor[j + 1] = Math.round(ny * 127); nor[j + 2] = Math.round((-nx * s + nz * c) * 127);
         const ci = d.col[i * 3], ao = d.col[i * 3 + 1] / 255, pw = d.col[i * 3 + 2], part = pw >> 5;
-        const a = 0.55 + 0.45 * Math.min(1, ao * 1.2);
+        const a = 0.62 + 0.38 * Math.min(1, ao * 1.2);
         let r, g, b;
         if (part === 0 || part === 5) { r = PAL[ci * 3] / 255; g = PAL[ci * 3 + 1] / 255; b = PAL[ci * 3 + 2] / 255; }
         else { const f = PAL[ci * 3] / 255 / 0.8, pc = pal[part] || pal[1]; r = pc[0] * f; g = pc[1] * f; b = pc[2] * f; }

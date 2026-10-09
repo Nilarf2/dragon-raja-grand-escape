@@ -101,6 +101,19 @@
     C.tint(geo, wallCols[seed % wallCols.length]);
     const m = new T.Mesh(geo, flatMats[0]); m.position.y = gmin - 2; m.castShadow = m.receiveShadow = true;
     scene.add(m); C.outline(m, 0.05);
+    if (C.vcBox) {   // parapet (a ring inside the footprint, no painted windows) and rooftop units
+      let cx = 0, cz = 0; for (const [x, z] of P) { cx += x / P.length; cz += z / P.length; }
+      const inner = P.map(([x, z]) => { const dx = x - cx, dz = z - cz, l = Math.hypot(dx, dz) || 1, k = Math.max(0, l - 0.3) / l; return new T.Vector2(cx + dx * k, -(cz + dz * k)); });
+      const sh = new T.Shape(P.map(([x, z]) => new T.Vector2(x, -z))); sh.holes.push(new T.Path(inner.reverse()));
+      const pg = new T.ExtrudeGeometry(sh, { depth: 0.8, bevelEnabled: false }); pg.rotateX(-Math.PI / 2); C.tint(pg, wallCols[(seed + 2) % wallCols.length]);
+      const pm = C.vcBox(scene, 1, 1, 1, 0xffffff, 0, gmin + h, 0); pm.geometry.dispose(); pm.geometry = pg; pm.scale.set(1, 1, 1);
+      const r = minRect(P), c = Math.cos(r.rot), s = Math.sin(r.rot);
+      for (let k = 0; k < Math.min(4, Math.floor(r.area / 120)); k++) {
+        const a = (C.rand() - 0.5) * (r.w - 3), b = (C.rand() - 0.5) * (r.d - 3);
+        C.vcBox(scene, 0.85, 0.6, 0.35, 0xdedfdc, r.cx + a * c + b * s, gmin + h + 0.3, r.cz - a * s + b * c, r.rot);
+      }
+      if (r.area > 300) C.vcBox(scene, 1.8, 1.2, 1.6, 0xc9cac6, r.cx, gmin + h + 0.6, r.cz, r.rot);   // water tank housing
+    }
     return gmin + h;
   }
   // Blender-built library (models.js): variant fitted to the footprint, floor at the uphill corner on a podium
@@ -131,7 +144,7 @@
     const W = (x, z) => [h.x + x * c + z * s, h.z - x * s + z * c];
     const g0 = -h.w / 2 + 0.35 * h.sx, g1 = -h.w / 2 + 1.75 * h.sx;   // the gate opposite the door
     const block = 0xa8a69e, cap = 0x8c8a84, post = [0xb9b3a6, 0x9a6b52, 0xc8c2b4][h.seed % 3];
-    for (const [a, b] of [[-h.w / 2 - 0.3, g0], [g1, h.w / 2 + 0.3]]) {
+    for (const [a, b] of [[-h.w / 2 - 0.1, g0], [g1, h.w / 2 + 0.1]]) {
       const L = b - a; if (L < 0.4) continue;
       const n = Math.max(1, Math.ceil(L / 2.4));
       for (let i = 0; i < n; i++) {

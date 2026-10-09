@@ -18,6 +18,8 @@
   ramune, cold tea…), shop doorways to look into (the shrine-lane shops and the town shops each have a line), and
   wooden benches under some shop awnings to sit on. The hint at the bottom of the screen says what E will do.
 - Utility poles stand at the road edge instead of inside the front yards.
+- Large flat-roofed buildings get a parapet and rooftop units; rectangular mid-size blocks from the map become
+  apartments or warehouses from the library.
 
 ## v0.2-alpha (2026-10-05)
 - **The passenger crossing (構内踏切):** a walkway across both tracks at the platforms' north ends, as in the photos,
