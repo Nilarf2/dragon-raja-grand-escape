@@ -7,8 +7,8 @@
   // ao / ssr / rays / hfog: strengths of the fx_rt.js effects (0 = off)
   const PRESETS = {
     day:    { exposure: 1.0,  sat: 1.06, warm: 0.02, lift: 0.03, bloom: 0.35, thresh: 0.78, vig: 0.28, memory: 0, soft: 0,    ao: 0.85, ssr: 0.7, rays: 0.25, hfog: 0.35 },
-    golden: { exposure: 1.02, sat: 1.12, warm: 0.07, lift: 0.04, bloom: 0.55, thresh: 0.7,  vig: 0.32, memory: 0, soft: 0,    ao: 0.8,  ssr: 0.8, rays: 0.8,  hfog: 0.5 },
-    sunset: { exposure: 1.04, sat: 1.15, warm: 0.09, lift: 0.05, bloom: 0.75, thresh: 0.62, vig: 0.38, memory: 0, soft: 0.1,  ao: 0.75, ssr: 0.9, rays: 1.0,  hfog: 0.6 },
+    golden: { exposure: 1.02, sat: 1.12, warm: 0.07, lift: 0.04, bloom: 0.55, thresh: 0.7,  vig: 0.32, memory: 0, soft: 0,    ao: 0.8,  ssr: 0.8, rays: 0.6,  hfog: 0.4 },
+    sunset: { exposure: 1.04, sat: 1.15, warm: 0.09, lift: 0.05, bloom: 0.75, thresh: 0.62, vig: 0.38, memory: 0, soft: 0.1,  ao: 0.75, ssr: 0.9, rays: 0.8,  hfog: 0.5 },
     dusk:   { exposure: 1.05, sat: 1.05, warm: 0.02, lift: 0.06, bloom: 0.6,  thresh: 0.55, vig: 0.4,  memory: 0, soft: 0,    ao: 0.65, ssr: 0.8, rays: 0.3,  hfog: 0.5 },
     night:  { exposure: 1.12, sat: 0.98, warm: -0.02, lift: 0.05, bloom: 0.85, thresh: 0.45, vig: 0.45, memory: 0, soft: 0,   ao: 0.55, ssr: 0.8, rays: 0,    hfog: 0.35 },
     rain:   { exposure: 1.08, sat: 0.85, warm: -0.04, lift: 0.07, bloom: 0.8, thresh: 0.42, vig: 0.5,  memory: 0, soft: 0.15,  ao: 0.7,  ssr: 1.0, rays: 0,    hfog: 0.9 },
@@ -117,28 +117,32 @@
     r.setRenderTarget(this.out); r.render(this.comp.s, this.ocam);
   };
   // Photo mode: average n frames with sub-pixel camera jitter (clean edges, no grain noise, smoother AO / reflections).
-  // Call after a still frame, e.g. CITY.fx.accumulate(16) (e.g. through the screenshot tool's --eval).
+  // Call after a still frame: CITY.fx.accumulate(16) returns a promise; the result is drawn in the next animation frame.
   P.accumulate = function (n = 16, t = 0) {
     const r = this.renderer, cam = this.camera, w = this.rt.width, h = this.rt.height;
-    if (!this.acc || this.acc.width !== w || this.acc.height !== h) {
-      if (this.acc) { this.acc.dispose(); this.fin.dispose(); }
-      this.acc = new T.WebGLRenderTarget(w, h, { type: T.HalfFloatType, minFilter: T.NearestFilter, magFilter: T.NearestFilter });
+    if (!this.acc || this.acc[0].width !== w || this.acc[0].height !== h) {
+      if (this.acc) { this.acc.forEach((a) => a.dispose()); this.fin.dispose(); }
+      const o = { type: T.HalfFloatType, minFilter: T.NearestFilter, magFilter: T.NearestFilter, depthBuffer: false };
+      this.acc = [new T.WebGLRenderTarget(w, h, o), new T.WebGLRenderTarget(w, h, o)];
       this.fin = new T.WebGLRenderTarget(w, h, { minFilter: T.NearestFilter, magFilter: T.NearestFilter });
-      this.copy = C.PostFX_mk(`uniform sampler2D src; uniform float opacity; varying vec2 vUv;
-        void main(){ gl_FragColor = vec4(texture2D(src, vUv).rgb, opacity); }`, { src: { value: null }, opacity: { value: 1 } });
-      this.copy.m.transparent = true;
+      this.avg = C.PostFX_mk(`uniform sampler2D src, prev; uniform float k; varying vec2 vUv;
+        void main(){ gl_FragColor = vec4(mix(texture2D(prev, vUv).rgb, texture2D(src, vUv).rgb, k), 1.0); }`,
+        { src: { value: null }, prev: { value: null }, k: { value: 1 } });
     }
-    const cu = this.copy.m.uniforms, halton = (i, b) => { let f = 1, x = 0; while (i > 0) { f /= b; x += f * (i % b); i = Math.floor(i / b); } return x; };
-    const shadowUpd = r.shadowMap.autoUpdate;
+    const au = this.avg.m.uniforms, halton = (i, b) => { let f = 1, x = 0; while (i > 0) { f /= b; x += f * (i % b); i = Math.floor(i / b); } return x; };
+    let cur = 0;
     for (let i = 0; i < n; i++) {
       cam.setViewOffset(w, h, halton(i + 1, 2) - 0.5, halton(i + 1, 3) - 0.5, w, h);
       this.out = this.fin; this.render(t + i * 0.731);
-      cu.src.value = this.fin.texture; cu.opacity.value = 1 / (i + 1);
-      r.setRenderTarget(this.acc); r.render(this.copy.s, this.ocam);
+      au.src.value = this.fin.texture; au.prev.value = this.acc[1 - cur].texture; au.k.value = 1 / (i + 1);
+      r.setRenderTarget(this.acc[cur]); r.render(this.avg.s, this.ocam); cur = 1 - cur;
     }
-    cam.clearViewOffset(); this.out = null; r.shadowMap.autoUpdate = shadowUpd;
-    cu.src.value = this.acc.texture; cu.opacity.value = 1;
-    this.copy.m.transparent = false; r.setRenderTarget(null); r.render(this.copy.s, this.ocam); this.copy.m.transparent = true;
+    cam.clearViewOffset(); this.out = null;
+    const res = this.acc[1 - cur];
+    return new Promise((done) => requestAnimationFrame(() => {
+      au.src.value = res.texture; au.prev.value = res.texture; au.k.value = 1;
+      r.setRenderTarget(null); r.render(this.avg.s, this.ocam); done(n);
+    }));
   };
   // pick a preset from the hour (wander mode)
   C.PostFX.autoPreset = (hour, rain) => rain > 0.3 ? 'rain' : hour < 6 || hour >= 19.6 ? 'night' : hour < 16.8 ? 'day' : hour < 18.2 ? 'golden' : hour < 19.0 ? 'sunset' : 'dusk';

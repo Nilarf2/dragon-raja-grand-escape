@@ -94,13 +94,14 @@
       // view-space march with growing steps, then a binary refine
       float stepLen = 0.25 + dist * 0.015, hit = 0.0;
       vec3 Q = P + R * stepLen * hash12(gl_FragCoord.xy + fract(time) * 37.0);
-      vec2 huv = vUv; float ti = 0.0;
+      vec2 huv = vUv, skyUv = vec2(-1.0); float ti = 0.0;
       for (int i = 0; i < STEPS; i++) {
         Q += R * stepLen;
         if (Q.z > -near) break;
         vec4 c = proj * vec4(Q, 1.0); vec2 uv = c.xy / c.w * 0.5 + 0.5;
         if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) break;
         float sd = texture2D(depthT, uv).x;
+        if (sd >= 1.0 && skyUv.x < 0.0) skyUv = uv;
         float diff = -Q.z - lin(sd);       // > 0: the ray went behind the visible surface
         if (sd < 1.0 && diff > 0.0 && diff < stepLen * 2.0 + 0.6) {
           vec3 a = Q - R * stepLen, b = Q;
@@ -120,7 +121,10 @@
         vec3 rc = texture2D(colT, huv).rgb * mix(vec3(1.0), vec3(0.82, 0.9, 1.0), sea);
         gl_FragColor = vec4(rc, k * conf * (sea > 0.0 ? 0.8 : 0.75));
       } else if (wet > 0.0) {
-        gl_FragColor = vec4(skyCol, k * 0.45);
+        // missed: puddles mirror what is on screen where the ray leaves into the sky (lamp halos, glowing sky),
+        // or the sky colour
+        vec3 rc = skyUv.x >= 0.0 ? texture2D(colT, skyUv).rgb : skyCol;
+        gl_FragColor = vec4(rc, k * 0.5);
       } else gl_FragColor = vec4(0.0);
     }`;
   // water smears reflections vertically: a 7-tap blur of colour and weight along one axis
@@ -138,13 +142,13 @@
       float illum = 1.0; vec3 acc = vec3(0.0);
       for (int i = 0; i < TAPS; i++) {
         vec2 q = uv - sunUv; q.x *= aspect;
-        float sky = step(1.0, texture2D(depthT, uv).x) * smoothstep(0.45, 0.0, length(q));
+        float sky = step(1.0, texture2D(depthT, uv).x) * smoothstep(0.32, 0.0, length(q));
         vec3 c = texture2D(colT, uv).rgb;
         acc += c * sky * illum;
         illum *= 0.965;
         uv -= delta;
       }
-      gl_FragColor = vec4(acc * 2.2 / float(TAPS), 1.0);
+      gl_FragColor = vec4(acc * 1.3 / float(TAPS), 1.0);
     }`;
 
   C.RTFX = function (pf) {
@@ -208,7 +212,7 @@
         vec3 P = fxView(vUv, texture2D(depthT, vUv).x);
         vec3 dir = normalize(mat3(viewInv) * P);
         float s = pow(max(dot(dir, sunDirW), 0.0), 6.0);
-        c = mix(c, fogCol + sunColF * s * 0.55, f);
+        c = mix(c, fogCol + sunColF * s * 0.35, f);
       }
       c += texture2D(raysT, vUv).rgb * raysK;
     }`;
