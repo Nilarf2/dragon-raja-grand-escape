@@ -1,5 +1,44 @@
 # Changelog
 
+## Unreleased
+- **Fixes after review (2026-10-09):**
+  - Screen-space ambient occlusion is about 45% weaker in every preset, now that the town has baked AO; golden-hour fog is lighter. The town looked grey and dim with both.
+  - Houses on steep lots get concrete steps from the ground up to the front door (shops: to the middle of the front), with a collider.
+  - Shop signboards show names (たばこ, 酒店, 釣具 えさ, 喫茶 さくら, …) from one shared texture: one draw call for all signs.
+  - Sun shadows: larger shadow bias (normal 0.3 m), which removes the vertical stripes ("shadow acne") on walls lit at a grazing angle.
+- **Town buildings built in Blender:** a library of 21 Japanese seaside-town buildings made by our own Blender Python
+  scripts (`tools/town_*.py`): gable, hip and shed-roofed houses, old one-storey houses with an engawa, a narrow
+  wooden townhouse, shops with roll shutters or glass fronts and awnings, two-storey apartments with an open corridor
+  and a steel stair, a three-storey block, a warehouse and a garage. They have wavy silver-grey kawara roofs with
+  ridges and onigawara, real recessed windows with sashes, rain-shutter boxes, lattices, balconies with railings and
+  laundry, skirt roofs, gutters and downpipes, AC units, TV antennas and rooftop solar water heaters.
+- **Ambient occlusion baked with Cycles** into the vertex colours: soft shade under the eaves, inside the window
+  reveals and under balconies, at no cost while playing.
+- **Three levels of detail** (`js/models.js`, data in `js/data/models_town.js`): the near level switches per house
+  in the shader, so nothing pops or leaves a hole as you walk; far houses keep their roof silhouettes, ridges and
+  windows. Every house gets its own wall, roof and sash colours.
+- **Houses on slopes** now stand on a concrete or stone podium with the floor at the uphill corner, instead of
+  sinking into the hill. Houses on the front row of a street get a block wall with a gate.
+- **Things to use (E):** vending machines by the shops and apartment blocks (a can drops with a clunk: mikan juice,
+  ramune, cold tea…), shop doorways to look into (the shrine-lane shops and the town shops each have a line), and
+  wooden benches under some shop awnings to sit on. The hint at the bottom of the screen says what E will do.
+- Utility poles stand at the road edge instead of inside the front yards.
+- Large flat-roofed buildings get a parapet and rooftop units; rectangular mid-size blocks from the map become
+  apartments or warehouses from the library.
+- **Light that looks ray-traced (screen-space effects, `js/fx_rt.js`):** all built from the depth buffer of the
+  post-processing pass, and blended by the existing presets (day / golden / sunset / dusk / night / rain / memory).
+  - **Ambient occlusion:** soft, violet-tinted contact shade in corners, under eaves and along the foot of walls
+    (half resolution, depth-aware blur).
+  - **Reflections:** the near sea mirrors the shore, the station and the boats, smeared down like real water; in
+    the rain, flat ground (platforms, roads) gets patchy puddle reflections. Missed rays fall back to the sea's own
+    sky reflection or the sky colour.
+  - **God rays:** light scattering from the sun over the sky at golden hour and sunset.
+  - **Height fog / aerial perspective:** low haze over the sea and the valley, coloured from the sky and brighter
+    toward the sun; thicker in rain and fog.
+  - **Quality:** `?fx=off|low|high` (`medium` = low). High on desktop, off on phones and with `?lite`;
+    `CITY.fx.setTier()` switches at runtime. `?fxdebug=ao|ssr|rays|mark|fog` shows one effect's buffer.
+  - **Photo mode:** `CITY.fx.accumulate(16)` averages 16 sub-pixel-jittered frames into one clean still.
+
 ## v0.2-alpha (2026-10-05)
 - **The passenger crossing (構内踏切):** a walkway across both tracks at the platforms' north ends, as in the photos,
   with crossing panels, tactile blocks, two 「とまれ」 posts whose red lamps blink with the level crossing, and two
