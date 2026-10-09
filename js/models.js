@@ -174,6 +174,52 @@
 
   // ---- the town registry
   const houses = [];
+  // concrete steps up to the entrance when the floor stands above the ground in front of it (houses on slopes).
+  // Houses: the door is centred 1.05 m from the front-left corner (town_buildings.py); shops: the middle of the front.
+  // Apartments have their own corridor stair. Front = local +Z.
+  const steps = [], signs = [];
+  const SHOP_NAMES = [['たばこ', 0], ['酒店', 1], ['米穀店', 0], ['喫茶 さくら', 2], ['八百屋', 3], ['理容 ミナト', 2], ['梅津寺商店', 1], ['金物店', 0],
+    ['パン工房', 3], ['クリーニング', 2], ['海の家 しおさい', 1], ['釣具 えさ', 3], ['お好み焼', 1], ['文具 ノート', 0], ['薬局', 2], ['写真館', 0]];
+  const SIGN_COL = [['#f2ece0', '#2a2a2e'], ['#b8322c', '#fff8ec'], ['#2f5f9c', '#ffffff'], ['#2f6b45', '#fff6e0']];
+  function buildSigns(scene) {
+    if (!signs.length) return;
+    const N = SHOP_NAMES.length, RH = 96;
+    const tex = C.signTexture(1024, N * RH, (g, w) => SHOP_NAMES.forEach(([t, k], i) => {
+      g.fillStyle = SIGN_COL[k][0]; g.fillRect(0, i * RH, w, RH);
+      g.strokeStyle = SIGN_COL[k][1]; g.globalAlpha = 0.35; g.lineWidth = 4; g.strokeRect(8, i * RH + 8, w - 16, RH - 16); g.globalAlpha = 1;
+      C.text(g, t, w / 2, i * RH + RH / 2 + 2, 62, SIGN_COL[k][1]);
+    }));
+    const pos = [], uv = [], nor = [];
+    for (const g of signs) {
+      const hw = g.w / 2, hh = 0.26, v0 = 1 - (g.i + 1) / N, v1 = 1 - g.i / N;
+      const P = (a, b) => [g.x + a * g.c, g.y + b, g.z - a * g.s];
+      const q = [P(-hw, -hh), P(hw, -hh), P(hw, hh), P(-hw, hh)], t = [[0, v0], [1, v0], [1, v1], [0, v1]];
+      for (const j of [0, 1, 2, 0, 2, 3]) { pos.push(...q[j]); uv.push(...t[j]); nor.push(g.s, 0, g.c); }
+    }
+    const geo = new T.BufferGeometry();
+    geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.setAttribute('normal', new T.Float32BufferAttribute(nor, 3));
+    const m = new T.Mesh(geo, new T.MeshToonMaterial({ map: tex, gradientMap: C.gradient, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    m.receiveShadow = true; scene.add(m);
+  }
+  function stepsFor(h) {
+    const k = h.v.k; if (k !== 'house' && k !== 'shop') return;
+    const c = Math.cos(h.rot), s = Math.sin(h.rot);
+    // shop signboard (kanban) text: the board is centred on the front, 3.55 m up, 70% of the width (town_buildings.py)
+    if (k === 'shop') { const z = h.d / 2 + 0.16 * h.sz + 0.04; signs.push({ x: h.x + z * s, y: h.y + 3.55, z: h.z + z * c, c, s, w: h.v.w * 0.7 * h.sx - 0.08, i: (h.seed >>> 0) % SHOP_NAMES.length }); }
+    const W = (k === 'house' ? 1.3 : 2.2);
+    const lx = k === 'house' ? (-h.v.w / 2 + 1.05) * h.sx : 0, R = 0.18, TR = 0.28;
+    const at = (lz) => [h.x + lx * c + lz * s, h.z - lx * s + lz * c];
+    const [fx, fz] = at(h.d / 2 + 0.45), rise = h.y - C.groundH(fx, fz);
+    if (rise < 0.3) return;
+    const n = Math.min(14, Math.ceil(rise / R));
+    for (let i = 0; i < n; i++) {
+      const lz = h.d / 2 + 0.12 + (i + 0.5) * TR, [x, z] = at(lz);
+      const top = h.y - (i * rise) / n, bot = Math.min(C.groundH(x, z), top - R) - 0.15;
+      steps.push({ x, z, y: (top + bot) / 2, w: W, h: top - bot, d: TR + 0.02, rot: h.rot });
+    }
+    const [cx, cz] = at(h.d / 2 + 0.12 + (n * TR) / 2);
+    C.addCollider(cx, cz, W / 2 + 0.05, (n * TR) / 2, h.rot);
+  }
   const TILE = 120, CELL = 60;
   C.Town3D = {
     lib: LIB, byName, houses,
@@ -198,9 +244,12 @@
       h.pal = palette(h);
       houses.push(h);
       C.addCollider(x, z, W / 2 + 0.25, D / 2 + 0.35, rot);
+      stepsFor(h);
       return h;
     },
     build(scene) {
+      for (const st of steps) C.vcBox(scene, st.w, st.h, st.d, 0xa9a69e, st.x, st.y, st.z, st.rot);
+      buildSigns(scene);
       const tiles = new Map(), cells = new Map();
       for (const h of houses) {
         const tk = Math.floor(h.x / TILE) + ',' + Math.floor(h.z / TILE), ck = Math.floor(h.x / CELL) + ',' + Math.floor(h.z / CELL);

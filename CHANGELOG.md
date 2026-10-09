@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- **Fixes after review (2026-10-09):**
+  - Screen-space ambient occlusion is about 45% weaker in every preset, now that the town has baked AO; golden-hour fog is lighter. The town looked grey and dim with both.
+  - Houses on steep lots get concrete steps from the ground up to the front door (shops: to the middle of the front), with a collider.
+  - Shop signboards show names (たばこ, 酒店, 釣具 えさ, 喫茶 さくら, …) from one shared texture: one draw call for all signs.
+  - Sun shadows: larger shadow bias (normal 0.3 m), which removes the vertical stripes ("shadow acne") on walls lit at a grazing angle.
 - **Town buildings built in Blender:** a library of 21 Japanese seaside-town buildings made by our own Blender Python
   scripts (`tools/town_*.py`): gable, hip and shed-roofed houses, old one-storey houses with an engawa, a narrow
   wooden townhouse, shops with roll shutters or glass fronts and awnings, two-storey apartments with an open corridor

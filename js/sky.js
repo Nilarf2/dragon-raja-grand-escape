@@ -109,7 +109,7 @@
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     const sc = this.sun.shadow.camera; sc.left = -65; sc.right = 65; sc.top = 65; sc.bottom = -65; sc.near = 1; sc.far = 700;
-    this.sun.shadow.bias = -0.0005; this.sun.shadow.normalBias = 0.05;
+    this.sun.shadow.bias = -0.001; this.sun.shadow.normalBias = 0.3;
     scene.add(this.hemi, this.sun, this.sun.target);
     scene.fog = new T.FogExp2(0xbfe6fa, 0.00009);
     this.fogBase = 0.00009; this.fogExtra = 0;
