@@ -23,6 +23,7 @@
       rNear: { value: new T.Vector4(g.x0 - g.dx / 2, g.z0 - g.dx / 2, g.nx * g.dx, g.nz * g.dx) },
       rFar: { value: new T.Vector4(C.terrainGrid.far.x0 - C.terrainGrid.far.dx / 2, C.terrainGrid.far.z0 - C.terrainGrid.far.dx / 2, C.terrainGrid.far.nx * C.terrainGrid.far.dx, C.terrainGrid.far.nz * C.terrainGrid.far.dx) },
       calm: { value: 0 },
+      mark: { value: 1 },   // alpha written into the scene target: 0.5 marks the sea for screen-space reflections (fx_rt.js)
     }]);
     this.uni.hNear.value = heightTexture(g, C.terrainGrid.nearH);
     this.uni.hFar.value = heightTexture(C.terrainGrid.far, C.terrainGrid.farH);
@@ -41,7 +42,7 @@
           #include <fog_vertex>
         }`,
       fragmentShader: `
-        uniform float time, night, tide, sunSize, calm; uniform vec3 sunDir, lightCol, hor, top, deep, shallow;
+        uniform float time, night, tide, sunSize, calm, mark; uniform vec3 sunDir, lightCol, hor, top, deep, shallow;
         uniform sampler2D hNear, hFar; uniform vec4 rNear, rFar;
         varying vec3 vW;
         #include <fog_pars_fragment>
@@ -87,7 +88,7 @@
           float run = 0.5 + 0.5 * sin(time * 1.1 - depth * 5.0 + n1 * 5.0);
           float foam = sh * smoothstep(0.6, 0.95, run + n2 * 0.4) * 0.8 + (1.0 - smoothstep(0.0, 0.18, depth)) * 0.5;
           col = mix(col, vec3(0.97) * (0.35 + 0.65 * dark), clamp(foam, 0.0, 1.0) * 0.75 * max(inside, 0.4));
-          gl_FragColor = vec4(col, 1.0);
+          gl_FragColor = vec4(col, mark);
           #include <fog_fragment>
         }`,
     });
