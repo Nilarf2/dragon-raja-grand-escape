@@ -43,6 +43,7 @@ npm run preview -- --port 5180
 
 ```bash
 TEST_URL=http://127.0.0.1:5180/ npm run test:browser
+TEST_URL=http://127.0.0.1:5180/ TEST_NAME=blocked-storage TEST_BLOCK_STORAGE=1 npm run test:browser
 TEST_URL=http://127.0.0.1:5180/ TEST_NAME=webgpu-high TEST_QUERY='?still&start&at=platform1&fx=high' TEST_SCENE_CYCLE=3 npm run test:browser
 ```
 
@@ -58,7 +59,11 @@ npm run preview -- --port 5181 --base /dragon-raja/
 TEST_URL=http://127.0.0.1:5181/dragon-raja/ TEST_NAME=webgl-low TEST_QUERY='?still&start&fx=low&renderer=webgl' TEST_SCENE_CYCLE=3 npm run test:browser
 ```
 
-可用 `CHROMIUM_PATH` 指定可执行文件。脚本会记录 JS / GPU / HTTP 错误，输出截图和 JSON 到 `tests/artifacts/`。此目录不提交到 git；交付验证包另附结果。CI 工作流执行 npm ci、单元测试和构建；GitHub 上的工作流尚未触发，浏览器 GPU 检查是独立的本机步骤。
+可用 `CHROMIUM_PATH` 指定可执行文件。脚本会记录 JS / GPU / HTTP 错误，输出截图和 JSON 到 `tests/artifacts/`。此目录不提交到 git；交付验证包另附结果。CI 工作流执行 npm ci、单元测试和构建；GitHub 已执行迁移版本的工作流，各次提交状态以对应检查为准。浏览器 GPU 检查是独立的本机步骤。
+
+### 平台内嵌存储回归
+
+Bilibili Toy 跨站内嵌预览曾在读取 `localStorage` 属性时抛出 `SecurityError`，导致启动中断。后续修复在属性访问、读写权限或配额失败时降级为页面内临时存档。新增两项单元测试后总计 11 项；`TEST_BLOCK_STORAGE=1` 可重现属性访问被拒绝，验证启动、临时保存提示、跨场景恢复及原有剧情流程。初始验证表和下方截图保留迁移基线，平台发布时的实际结果另附发布记录。
 
 ## 尚未验收的范围
 

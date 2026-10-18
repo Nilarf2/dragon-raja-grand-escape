@@ -22,7 +22,10 @@ async function boot() {
   const assets = createAssetManager(); scope.defer(() => assets.dispose());
   const manager = new SceneManager({ renderer, assets, query, notify }); scope.defer(() => manager.dispose());
   for (const scene of scenes) manager.register(scene);
-  const saves = new SaveStore(localStorage), loop = new UpdateLoop(); scope.defer(() => loop.dispose());
+  // Third-party platform frames may deny even reading the localStorage property.
+  let saveStorage: Storage | undefined;
+  try { saveStorage = window.localStorage; } catch {}
+  const saves = new SaveStore(saveStorage), loop = new UpdateLoop(); scope.defer(() => loop.dispose());
   let paused = false, frames = 0, sampleTime = performance.now(), lastFPS = 0;
   const maxPixelRatio = renderer.getPixelRatio();
   const backend = (renderer.backend as unknown as { isWebGPUBackend?: boolean }).isWebGPUBackend ? 'webgpu' : 'webgl2';
@@ -34,7 +37,11 @@ async function boot() {
     try { const changed = await manager.switchTo(id, save); if (changed) { picker.value = id; manager.current!.resize(innerWidth, innerHeight); manager.current!.update(0, loop.time); manager.current!.render(loop.time); notify(''); } return changed; }
     finally { loading--; }
   }
-  function save() { if (!manager.current) return; saves.write(manager.current.snapshot()); notify('已保存。剧情从当前段落开头继续。'); }
+  function save() {
+    if (!manager.current) return;
+    saves.write(manager.current.snapshot());
+    notify(saves.persistent ? '已保存。剧情从当前段落开头继续。' : '已临时保存（刷新后失效）。剧情从当前段落开头继续。');
+  }
   async function restore() { const snapshot = saves.read(); if (!snapshot) { notify('还没有存档'); return false; } return loadScene(snapshot.sceneId, snapshot); }
   scope.listen(picker, 'change', () => { loadScene(picker.value).catch(fail); });
   scope.listen(document.getElementById('save-game')!, 'click', () => { try { save(); } catch (e) { fail(e); } });

@@ -10,6 +10,9 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const errors = [], warnings = [], checks = [];
 let failure;
 const page = await browser.newPage({ viewport: { width: 800, height: 450 } });
+if (process.env.TEST_BLOCK_STORAGE === '1') await page.addInitScript(() => {
+  Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new DOMException('Cross-site storage blocked', 'SecurityError'); } });
+});
 page.on('pageerror', error => { errors.push(error.stack); console.log('PAGE ERROR', error.message); });
 page.on('response', response => { if (response.status() >= 400) { const error = `HTTP ${response.status()}: ${response.url()}`; errors.push(error); console.log(error); } });
 page.on('console', message => {
@@ -33,6 +36,7 @@ try {
     }
     assert.ok(positions.every(p => p.position.every(Number.isFinite))); checks.push({ positions });
     await page.evaluate(() => { const a = window.__DRAGON_RAJA__; a.story('start'); a.step(); a.save(); });
+    if (process.env.TEST_BLOCK_STORAGE === '1') assert.match(await page.locator('#runtime-status').textContent(), /临时保存.*刷新后失效/);
     assert.equal((await inspect()).scene.mode, 'story');
     await page.evaluate(() => window.__DRAGON_RAJA__.story('stop'));
     let warmMemory;
@@ -93,6 +97,6 @@ try {
   console.log('STATUS', await page.locator('#runtime-status').textContent().catch(() => 'unavailable'));
   process.exitCode = 1;
 } finally {
-  await writeFile(`${artifacts}/${name}-result.json`, JSON.stringify({ passed: !failure, failure, browser: browser.version(), base, query: process.env.TEST_QUERY || '?lite&nofx&still&start', checks, errors, warnings: [...new Set(warnings)] }, null, 2));
+  await writeFile(`${artifacts}/${name}-result.json`, JSON.stringify({ passed: !failure, failure, browser: browser.version(), base, blockedStorage: process.env.TEST_BLOCK_STORAGE === '1', query: process.env.TEST_QUERY || '?lite&nofx&still&start', checks, errors, warnings: [...new Set(warnings)] }, null, 2));
   await browser.close();
 }
