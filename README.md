@@ -108,6 +108,12 @@ TEST_URL=http://127.0.0.1:5180/ CHROMIUM_PATH=/usr/bin/chromium npm run test:bro
 
 此版本完成的是扩展框架及现有内容迁移。无缝大世界流式加载、复杂室内三维碰撞、导航网格、NPC AI、IK / 动作重定向、正式角色美术、账号与云存档不在当前实现内。尚需真实桌面 GPU 和手机验收画质、性能与设备兼容性。
 
+## 贡献者
+
+- **Nilarf2**：项目作者，负责创作方向与需求。
+- **Claude（Anthropic）**：AI 编程协作者，参与原有场景、建筑、画面效果的开发与迭代修正。
+- **Codex（OpenAI）**：AI 编程协作者，参与 v0.3 运行框架模块化、WebGPU / TSL 迁移、资源生命周期管理、骨骼动画接入与自动化验证。
+
 ## 作者与许可
 
 - 作者 **Nilarf2**；代码 MIT，© 2026 Nilarf2，见 [LICENSE](LICENSE)。
