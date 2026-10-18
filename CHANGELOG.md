@@ -1,6 +1,18 @@
 # Changelog
 
-## Unreleased
+## v0.3-alpha (2026-10-18)
+
+- Replace fixed script tags and global CITY with an ES modules / Vite application, typed core services and scene-local procedural content.
+- Use Three.js 0.186.1 WebGPURenderer by default, with a shared WebGL2 fallback. Port sky, sea, terrain, building windows and post-processing to TSL nodes.
+- Add cancellable scene loading, explicit resource ownership, shared asset handles, spatial collision indexing and scene-scoped input/audio cleanup. Consolidate train factories and reuse train models.
+- Separate the 11 story beats from the runner and UI. Save versioned local state using explicit chapter/beat IDs that survive production minification.
+- Add an independent Character Studio with an original skinned GLB, five animations, per-instance skeletons and animation blending.
+- Move data to asynchronous JSON assets. Parameterize the terrain pipeline by region, retain the Blender building library, and add content validation and regression tests.
+- Distribution now requires an HTTP/HTTPS origin; publish the built `dist/` directory. The old double-click `file://` entry is retired.
+- Legacy `CITY.fx` console helpers, `fxdebug` effect-buffer views and temporal screenshot accumulation are not ported. Normal photo mode remains available.
+- See `docs/ARCHITECTURE.md` and `docs/VALIDATION.md` for extension steps, executed checks and remaining limits.
+
+## Pre-v0.3 changes (previously unreleased)
 - **Fixes after review (2026-10-09):**
   - Screen-space ambient occlusion is about 45% weaker in every preset, now that the town has baked AO; golden-hour fog is lighter. The town looked grey and dim with both.
   - Houses on steep lots get concrete steps from the ground up to the front door (shops: to the middle of the front), with a collider.

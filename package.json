@@ -1,0 +1,29 @@
+{
+  "name": "dragon-raja-grand-escape",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "npm run typecheck && npm run validate && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "validate": "tsx tools/validate/content.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/three": "0.186.0",
+    "playwright-core": "1.64.1",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -1,4 +1,4 @@
-# Data-pipeline download cache (rebuild with: python tools/fetch_data.py)
+# Data-pipeline download cache (rebuild with: python tools/terrain/fetch_data.py)
 tools/cache/
 __pycache__/
 *.pyc
@@ -11,3 +11,7 @@ desktop.ini
 *.swp
 .idea/
 .vscode/
+node_modules/
+dist/
+tests/artifacts/
+*.tsbuildinfo

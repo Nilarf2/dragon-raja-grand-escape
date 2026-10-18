@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>迎着阳光盛大逃亡 — A Grand Escape into the Sun (v0.2-alpha)</title>
+<link rel="icon" href="data:,">
+<title>迎着阳光盛大逃亡 — A Grand Escape into the Sun (v0.3-alpha)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="stylesheet" href="css/style.css">
+
 </head>
 <body>
 <div id="app"></div>
@@ -39,7 +40,7 @@
     <div class="buttons"><button id="btn-story">Story</button><button id="btn-wander">Wander</button></div>
     <p class="hint">sound on recommended · story takes about 15 minutes<span class="touch-hint"><br>left thumb: walk · right thumb: look · tap to continue</span></p>
   </div>
-  <p class="credit">v0.2-alpha · a non-commercial fan work by Nilarf2 · map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) ·
+  <p class="credit">v0.3-alpha · a non-commercial fan work by Nilarf2 · map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) ·
     elevation: 国土地理院 <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">GSI</a> · built with <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a></p>
 </div>
 
@@ -56,31 +57,12 @@
   </div>
 </div>
 
-<script src="lib/three.min.js"></script>
-<script src="js/util.js"></script>
-<script src="js/data/geo.js"></script>
-<script src="js/data/terrain_near.js"></script>
-<script src="js/data/terrain_far.js"></script>
-<script src="js/data/osm.js"></script>
-<script src="js/data/rail.js"></script>
-<script src="js/data/anchors.js"></script>
-<script src="js/terrain.js"></script>
-<script src="js/sky.js"></script>
-<script src="js/sea.js"></script>
-<script src="js/weather.js"></script>
-<script src="js/postfx.js"></script>
-<script src="js/fx_rt.js"></script>
-<script src="js/data/models_town.js"></script>
-<script src="js/models.js"></script>
-<script src="js/landmarks.js"></script>
-<script src="js/trains.js"></script>
-<script src="js/station.js"></script>
-<script src="js/town.js"></script>
-<script src="js/railway.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/player.js"></script>
-<script src="js/interact.js"></script>
-<script src="js/story.js"></script>
-<script src="js/main.js"></script>
+<div class="runtime-toolbar" aria-label="场景和存档">
+  <select id="scene-picker" aria-label="选择场景"></select>
+  <button id="save-game">保存</button><button id="load-game">继续</button>
+</div>
+<div id="runtime-status" role="status" aria-live="polite"></div>
+<div id="runtime-stats"></div>
+<script type="module" src="/src/app/main.ts"></script>
 </body>
 </html>

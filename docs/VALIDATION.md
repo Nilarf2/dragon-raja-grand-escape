@@ -1,0 +1,83 @@
+# v0.3 迁移验证
+
+执行日期：2026-10-18。基线为原仓库 `fdc41fb73abccef0ce900ef0627c2848f9412061`。
+
+## 环境与方法
+
+- Node.js 24.21.0，Python 3.14.6，Chromium 152.0.7977.82，800 × 450 视口。
+- 临时隔离 Chromium 会话，SwiftShader 软件适配器。浏览器实际进入 WebGPURenderer 的 WebGPU 后端；兼容检查显式使用 WebGL2。
+- 浏览器验证针对 `npm run build` 产物，由本机静态预览服务提供，不依赖开发服务器 HMR。
+- 不将软件渲染 FPS 作为目标桌面 GPU 或手机的性能结论。
+
+## 已执行检查
+
+| 检查 | 结果 |
+|---|---|
+| `npm test` | 9 项通过：作用域清理、共享资源并发 / 取消 / 晚到释放、场景切换失败与取消、空间查询、剧情跳过、存档验证、独立骨架与动作重播 |
+| `npm run build` | TypeScript 核心严格检查、内容校验、生产构建通过 |
+| 内容清单 | 2 个场景、资源引用、GLB 骨架与五动作、2 份地形网格、21 个建筑变体及三级 LOD 通过 |
+| 原始数据对照 | 7 份 JSON 与旧版对应数据脚本中的对象逐项相等；geo 的坐标转换函数移到场景模块 |
+| Python 工具 | 6 个文件通过 AST 语法检查；没有重新联网抓取或运行 Blender 烘焙 |
+| WebGPU 生命周期 | 九个地点分别定位并渲染；梅津寺 ↔ 角色 Studio 往返三次；存档恢复为剧情模式 |
+| 剧情流程 | 1156 次一秒模拟步进，依次经过全部 11 段并回到漫游；这是加速逻辑检查，不是人类完整观看验收 |
+| 场景资源 | 三次返回均为 185 个已上传几何、354 个顶点属性（23,586,360 字节）、44 张纹理、7 个资源句柄、55 个监听 / 清理登记、2356 个碰撞框、19 个更新器 |
+| WebGPU 高画质与阴影 | 执行结果见本文件末尾的渲染矩阵 |
+| WebGL2 与子目录部署 | 执行结果见本文件末尾的渲染矩阵 |
+
+生命周期测试初始梅津寺有 1478 个 mesh。迁移移除了七个没有实例的电线杆批次，并将密集栏杆拆成较小批次；mesh 数量本身不表示内容增减。上传几何计数只统计实际渲染过的资源，不等于所有 CPU 几何；视角、LOD、列车和剧情会改变计数。三次循环的稳定结果不能替代数小时内存曲线或 JS 堆分析。
+
+测试也追踪顶点缓冲的数量和字节数；仅几何 / 贴图计数稳定不足以证明缓冲已释放。
+
+测试中修复了生产压缩改变函数名导致检查点失效、共享 Sprite 几何被场景提前销毁、树冠 LOD 克隆未登记和距离中心不正确、对象渲染绑定未释放、超大栏杆实例批次的跨 pass 属性滞留、建筑窗灯字节标量顶点格式不兼容 WebGPU、空实例批次创建零字节 GPU 缓冲，单次动作重播时自我淡出，以及多重采样深度不能被 GTAO gather 读取的问题（改为单采样 G-buffer + SMAA）。
+
+## 复现
+
+```bash
+npm ci
+npm test
+npm run build
+npm run preview -- --port 5180
+```
+
+另开终端：
+
+```bash
+TEST_URL=http://127.0.0.1:5180/ npm run test:browser
+TEST_URL=http://127.0.0.1:5180/ TEST_NAME=webgpu-high TEST_QUERY='?still&start&at=platform1&fx=high' TEST_SCENE_CYCLE=3 npm run test:browser
+```
+
+子目录兼容测试先在另一个终端启动：
+
+```bash
+npm run preview -- --port 5181 --base /dragon-raja/
+```
+
+再执行：
+
+```bash
+TEST_URL=http://127.0.0.1:5181/dragon-raja/ TEST_NAME=webgl-low TEST_QUERY='?still&start&fx=low&renderer=webgl' TEST_SCENE_CYCLE=3 npm run test:browser
+```
+
+可用 `CHROMIUM_PATH` 指定可执行文件。脚本会记录 JS / GPU / HTTP 错误，输出截图和 JSON 到 `tests/artifacts/`。此目录不提交到 git；交付验证包另附结果。CI 工作流执行 npm ci、单元测试和构建；GitHub 上的工作流尚未触发，浏览器 GPU 检查是独立的本机步骤。
+
+## 尚未验收的范围
+
+- 真实硬件 GPU、Safari / Firefox、手机触控与性能预算。
+- 完整人工游玩、音频听感、所有剧情镜头的画质对照。
+- 各种第三方角色骨架、压缩纹理、超大模型；目前使用仓库自带原创占位 GLB。
+- 重新生成地图和完整 Blender AO 烘焙、无缝区域流式加载、长时间内存曲线。
+
+## 渲染矩阵与截图
+
+- WebGPU，高档后期 + 阴影 + SMAA：白天、雨夜与角色场景往返三次通过，0 个 JS / GPU / HTTP 错误、0 个警告。
+- 高档场景热身后连续三次均为：178 个已上传几何、297 个顶点属性、25,242,392 字节顶点属性、56 张纹理、21 个渲染目标、334 个 uniform buffer。首次进入不同渲染路径会建立渲染器级缓存；后续循环没有持续增长。程序源码字节数可能随内部 ID 长度略变。
+- WebGL2，低档后期 + 阴影 + SMAA，在 `/dragon-raja/` 子目录：白天、雨夜与角色场景往返三次通过，0 个 JS / GPU / HTTP 错误。软件 OpenGL 驱动记录了两条 `outsideRenderPass queueSerial` 性能警告，不据此推断真实设备性能。
+- WebGL2 三次返回均为：251 个已上传几何、448 个顶点属性（28,829,356 字节）、71 张纹理、19 个渲染目标、454 个 uniform buffer。不同后端的缓存及统计口径不完全一致，不能直接用这些数字判断后端优劣。
+
+以下为 800 × 450 软件适配器截图，未经过外部图像增强：
+
+![WebGPU 白天站台](screenshots/v03-baishinji.png)
+
+![WebGPU 雨夜](screenshots/v03-rain-night.png)
+
+![GLB 角色骨骼动作](screenshots/v03-studio.png)
