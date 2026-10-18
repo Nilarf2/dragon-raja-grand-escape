@@ -1,0 +1,9 @@
+.runtime-toolbar { position: fixed; top: calc(44px + env(safe-area-inset-top)); right: 12px; z-index: 80; display: flex; gap: 6px; align-items: center; }
+.runtime-toolbar select, .runtime-toolbar button, .animation-controls button { border: 1px solid #ffffff50; border-radius: 6px; background: #20323dcc; color: #fff; padding: 7px 9px; font: 13px system-ui, sans-serif; }
+#runtime-status { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #152a39dc; color: #fff; padding: 10px 16px; border-radius: 6px; z-index: 100; font: 14px system-ui, sans-serif; max-width: 85vw; }
+#runtime-status:empty { display: none; }
+#runtime-status.error { background: #703b38ef; }
+#runtime-stats { position: fixed; left: 10px; bottom: 8px; color: white; background: #162731b0; z-index: 90; font: 12px monospace; }
+.animation-controls { position: fixed; bottom: 65px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 90; }
+.photo .runtime-toolbar, .cine .runtime-toolbar { display: none; }
+@media (max-width: 600px) { .runtime-toolbar { top: auto; bottom: 8px; right: 8px; } .runtime-toolbar select { max-width: 150px; } }

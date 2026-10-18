@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "studio",
+  "name": "角色与动画 · Character Studio",
+  "seed": 20261018,
+  "entry": "entrance",
+  "anchors": ["entrance"],
+  "assets": [{ "id": "mannequin", "type": "gltf", "url": "content/characters/mannequin.glb", "skinned": true, "animations": ["idle", "walk", "run", "sit", "wave"] }]
+}

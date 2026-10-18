@@ -1,49 +1,60 @@
-# Data pipeline (longzu/0002)
+# 内容生产工具
 
-The game never downloads anything. These two scripts turn real-world data into the plain `.js` files in `../js/data/`.
-They are already built and committed, so **you only need this to change the area or the anchors.**
+运行游戏直接使用 `public/content/` 中已提交的资源。只有修改地区或模型时才需要以下工具。命令均从仓库根目录执行。
 
+## 地形与地图
+
+```bash
+python -m venv .venv
+.venv/bin/pip install -r tools/terrain/requirements.txt
+.venv/bin/python tools/terrain/fetch_data.py --region content/scenes/baishinji/region.json
+.venv/bin/python tools/terrain/build_data.py --region content/scenes/baishinji/region.json
+npm run validate
 ```
-pip install -r requirements.txt     # numpy
-python fetch_data.py                # GSI elevation tiles + OpenStreetMap → cache/   (about 17 MB, not committed)
-python build_data.py                # cache/ → ../js/data/*.js
-```
 
-| Output | What it is |
+`content/scenes/<region>/region.json` 记录 schemaVersion、地区 ID、坐标原点、地图范围、快照日期、DEM 瓦片范围、近远景网格、铁路 way ID、站台坐标和剧情锚点。缓存默认位于 `tools/cache/<region>/`，可由 `LONGZU_DATA_CACHE` 覆盖；输出为 `public/content/<region>/`。`build_data.py --out DIR` 可另选输出目录。
+
+| 输出 | 内容 |
 |---|---|
-| `terrain_near.js` | 5 m height grid, 1.9 × 2 km around the station (GSI `dem5a`, gaps filled from `dem`) |
-| `terrain_far.js` | 120 m grid, 48 × 48 km with the Inland Sea islands (GSI `dem` z14 + z11); sea depth is synthesized from the distance to the shore |
-| `geo.js` | the local frame: origin = Baishinji station (33.874975 N, 132.7074333 E), +X east, +Z south, 1 unit = 1 m |
-| `osm.js` | buildings, roads, paths, land-use areas, lines and points of interest |
-| `rail.js` | the Iyotetsu Takahama line; both station tracks are straightened through the platforms (`station` frame) |
-| `anchors.js` | where the novel's places sit: station, parking lot, Ferris wheel, school, shrine, hill tram, the rock… (edit `A = dict(...)` in `build_data.py`) |
+| `geo.json` | 本地米制坐标：+X 东、+Z 南 |
+| `terrain_near.json` | 近景 Int16 高程网格，base64 数据 |
+| `terrain_far.json` | 远景高程与合成海底 |
+| `osm.json` | 建筑、道路、区域和兴趣点 |
+| `rail.json` | 铁路线与车站坐标系 |
+| `anchors.json` | 地点与剧情布置锚点 |
 
-Notes:
-- `fetch_data.py` asks Overpass for the map **as it was on 2026-10-04**, so the railway way IDs in `build_data.py` still match.
-  If the dated query fails, it falls back to today's data and says so. `--latest` asks for today's data directly;
-  `--dem-only` / `--osm-only` fetch one half.
-- Running both scripts on the 2026-10-04 data reproduces the committed files byte-for-byte.
-- The public Overpass servers are often busy (HTTP 504). Wait a few minutes and run `python fetch_data.py --osm-only` again.
+抓取默认请求配置指定日期的 Overpass 快照；失败后允许回退最新数据并打印提示。`--latest` 直接请求最新数据，`--dem-only` / `--osm-only` 只抓取对应部分。实际请求端点、快照与回退信息写入缓存的 `source.json`，不要将回退结果误标为历史快照。铁路 way ID 缺失时转换会失败，需要检查地区配置。
 
-## Town buildings (Blender)
+当前转换器面向 GSI 的 `dem5a_z15`、`dem_z14`、`dem_z11` 三层数据及既有铁路组织方式。新日本地区可以复用配置和转换器；其他国家数据源或不同铁路拓扑需要新增转换适配器。梅津寺特有的修整地形和建筑布置仍在其 `builders/` 内，配置不是一键生成任意完整地区的编辑器。
 
-`town_build.py` builds the library of town buildings with Blender 3.4 (headless, CPU only) and writes
-`../js/data/models_town.js`. The geometry is generated in plain Python (`town_lib.py`: walls with real window openings,
-kawara roofs, ridges, railings…; `town_buildings.py`: the house, shop, apartment and warehouse types and the variant
-list). Blender bakes ambient occlusion with Cycles into each face corner, and the script packs everything as base64
-(Int16 positions in millimetres, a shared colour palette, AO, the part to recolour, the window id) in three levels of
-detail, plus an inverted-hull outline shell.
+本次迁移只将已有数据从脚本封装转换为 JSON，未重新下载地图或高程。重新抓取会受上游数据、历史可用性和依赖版本影响，不承诺重建字节完全相同。
 
-```
-blender -b --python town_build.py -- --samples 16                       # rebuild ../js/data/models_town.js
-blender -b --python town_build.py -- --only hip2_skirt --preview out.png  # render a Cycles preview of some variants
+## Blender 建筑管线
+
+```bash
+blender -b --python tools/blender/town_build.py -- --samples 16
+blender -b --python tools/blender/town_build.py -- --only hip2_skirt --preview /tmp/house.png --out /tmp/house.json
 ```
 
-The output is deterministic: the same scripts give the same file. The game (`../js/models.js`) fits a variant to each
-footprint, scales it a little, picks the colours per house and switches the levels of detail.
+`town_buildings.py` 与 `town_lib.py` 生成建筑几何；`town_build.py` 使用 Cycles 烘焙顶点 AO，导出默认文件 `public/content/baishinji/models_town.json`。支持 `--out FILE`。保留原来的毫米 Int16 位置、颜色调色板、AO、重着色分区、窗户 ID、三级 LOD 与轮廓壳。
 
-## Sources and licences
-- Elevation: 出典：国土地理院 標高タイル（加工して作成）. Source: Geospatial Information Authority of Japan (GSI)
-  elevation tiles, processed. Used under the [GSI terms of use](https://maps.gsi.go.jp/development/ichiran.html).
-- Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the
-  Open Database Licence (ODbL 1.0). `osm.js` and `rail.js` are derived databases and are offered under the ODbL too.
+原管线面向 Blender 3.4；本轮只校验 Python 语法与已生成资源，未重新烘焙，未验证更新的 Blender API。`--only` 输出部分变体，预览时请用独立 `--out`，避免覆盖完整库。
+
+## GLB 角色与动画
+
+仓库内的测试角色由代码原创生成，无外部模型下载：
+
+```bash
+node tools/blender/create-demo-character.mjs
+npm run validate
+```
+
+输出 `public/content/characters/mannequin.glb`，包含 9 根骨骼和 `idle`、`walk`、`run`、`sit`、`wave` 五个动作。这是验证导入、独立骨架、动作混合和销毁的占位模型。
+
+正式角色可从 Blender 导出 glTF 2.0 / GLB，统一采用米制、Y 向上，并在导出前检查骨骼与动作名称。将 GLB 放入 `public/content/characters/`，在场景清单声明资源、`skinned` 与必需的 `animations`，通过 AssetManager 获取并创建 Actor。默认加载器暂未配置 Draco、Meshopt 或 KTX2 解码器；使用这些压缩格式前需明确加入对应解码器和资源。
+
+## 校验与来源
+
+`npm run validate` 检查场景 ID、入口、资源路径、JSON、GLB 头、声明的骨架与动作、地形网格长度、建筑变体和 LOD。构建自动执行此检查。
+
+地图数据 © OpenStreetMap contributors，`osm.json` 和 `rail.json` 是 ODbL 派生数据库。高程来自 GSI（加工して作成）；详情及许可链接见 [NOTICE.md](../NOTICE.md)。

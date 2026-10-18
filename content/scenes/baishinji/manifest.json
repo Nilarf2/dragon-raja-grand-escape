@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "baishinji",
+  "name": "梅津寺 · Baishinji",
+  "seed": 20261001,
+  "entry": "lot",
+  "anchors": ["station", "platform1", "lot", "lane", "shrine", "summit", "rock", "wheel", "beach"],
+  "assets": [
+    { "id": "geo", "type": "json", "url": "content/baishinji/geo.json" },
+    { "id": "terrainNear", "type": "json", "url": "content/baishinji/terrain_near.json" },
+    { "id": "terrainFar", "type": "json", "url": "content/baishinji/terrain_far.json" },
+    { "id": "osm", "type": "json", "url": "content/baishinji/osm.json" },
+    { "id": "rail", "type": "json", "url": "content/baishinji/rail.json" },
+    { "id": "anchors", "type": "json", "url": "content/baishinji/anchors.json" },
+    { "id": "buildings", "type": "json", "url": "content/baishinji/models_town.json" }
+  ]
+}
