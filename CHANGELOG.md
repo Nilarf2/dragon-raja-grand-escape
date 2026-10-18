@@ -6,6 +6,7 @@
 - Use Three.js 0.186.1 WebGPURenderer by default, with a shared WebGL2 fallback. Port sky, sea, terrain, building windows and post-processing to TSL nodes.
 - Add cancellable scene loading, explicit resource ownership, shared asset handles, spatial collision indexing and scene-scoped input/audio cleanup. Consolidate train factories and reuse train models.
 - Separate the 11 story beats from the runner and UI. Save versioned local state using explicit chapter/beat IDs that survive production minification.
+- Keep the game playable when embedded browsers block local storage, falling back to temporary page saves with an explicit persistence notice.
 - Add an independent Character Studio with an original skinned GLB, five animations, per-instance skeletons and animation blending.
 - Move data to asynchronous JSON assets. Parameterize the terrain pipeline by region, retain the Blender building library, and add content validation and regression tests.
 - Distribution now requires an HTTP/HTTPS origin; publish the built `dist/` directory. The old double-click `file://` entry is retired.

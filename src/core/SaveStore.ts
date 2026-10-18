@@ -16,7 +16,17 @@ export function validateSave(value: unknown): SaveGame {
   return structuredClone(s);
 }
 export class SaveStore {
-  constructor(private storage: Pick<Storage, 'getItem' | 'setItem'>, private key = 'dragon-raja.save.v1') {}
-  write(save: SaveGame) { this.storage.setItem(this.key, JSON.stringify(validateSave(save))); }
-  read(): SaveGame | undefined { const text = this.storage.getItem(this.key); return text === null ? undefined : validateSave(JSON.parse(text)); }
+  private text: string | null = null;
+  constructor(private storage?: Pick<Storage, 'getItem' | 'setItem'>, private key = 'dragon-raja.save.v1') {}
+  get persistent() { return this.storage !== undefined; }
+  write(save: SaveGame) {
+    this.text = JSON.stringify(validateSave(save));
+    try { this.storage?.setItem(this.key, this.text); }
+    catch { this.storage = undefined; }
+  }
+  read(): SaveGame | undefined {
+    try { if (this.storage) this.text = this.storage.getItem(this.key); }
+    catch { this.storage = undefined; }
+    return this.text === null ? undefined : validateSave(JSON.parse(this.text));
+  }
 }

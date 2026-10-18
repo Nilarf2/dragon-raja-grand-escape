@@ -101,3 +101,22 @@ test('save format rejects corrupt state and round-trips checkpoint without mutab
   assert.throws(() => validateSave({ ...save, environment: { ...save.environment, rain: 2 } }));
   assert.throws(() => validateSave({ ...save, story: undefined }));
 });
+
+test('save remains available for the current page without browser storage', () => {
+  const store = new SaveStore();
+  const save: SaveGame = { schemaVersion: 1, sceneId: 'baishinji', mode: 'wander', player: { position: [1, 2, 3], yaw: 0, pitch: 0 }, environment: { hour: 18, rain: 0, fog: 0 } };
+  assert.equal(store.persistent, false); assert.equal(store.read(), undefined);
+  store.write(save); assert.deepEqual(store.read(), save);
+  assert.equal(new SaveStore().read(), undefined);
+});
+
+test('denied reads and quota failures fall back to temporary saves while corrupt data is rejected', () => {
+  const save: SaveGame = { schemaVersion: 1, sceneId: 'baishinji', mode: 'wander', player: { position: [1, 2, 3], yaw: 0, pitch: 0 }, environment: { hour: 18, rain: 0, fog: 0 } };
+  const denied = new SaveStore({ getItem() { throw new DOMException('Blocked', 'SecurityError'); }, setItem() { assert.fail('Denied storage must not be reused'); } });
+  assert.equal(denied.read(), undefined); assert.equal(denied.persistent, false);
+  denied.write(save); assert.deepEqual(denied.read(), save);
+  const full = new SaveStore({ getItem() { return null; }, setItem() { throw new DOMException('Full', 'QuotaExceededError'); } });
+  assert.equal(full.persistent, true); full.write(save); assert.equal(full.persistent, false); assert.deepEqual(full.read(), save);
+  const corrupt = new SaveStore({ getItem() { return '{invalid'; }, setItem() {} });
+  assert.throws(() => corrupt.read(), SyntaxError); assert.equal(corrupt.persistent, true);
+});
