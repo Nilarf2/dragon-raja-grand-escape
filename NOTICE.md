@@ -1,7 +1,14 @@
 # Notices and credits
 
 The code written for this game is © 2026 Nilarf2, under the MIT licence (see `LICENSE`).
-The parts below come from others and keep their own terms.
+Third-party libraries and data retain their own terms.
+
+## Development acknowledgements
+
+- **Claude (Anthropic)** — AI coding collaborator on the existing scenes, buildings,
+  visual effects and iterative fixes.
+- **Codex (OpenAI)** — AI coding collaborator on the v0.3 modular runtime, WebGPU / TSL
+  migration, resource lifecycle management, skeletal animation integration and automated validation.
 
 ## three.js
 `three` 0.186.1 is installed from npm and bundled in the production build, MIT licence.
