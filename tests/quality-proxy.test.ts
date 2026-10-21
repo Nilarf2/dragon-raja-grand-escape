@@ -25,8 +25,11 @@ test('quality proxy disposal preserves source geometry/materials for raster rend
   const scene = new Scene(), geometry = new BoxGeometry(), material = new MeshToonMaterial(); const mesh = new Mesh(geometry, material); scene.add(mesh);
   let sourceDisposals = 0; geometry.addEventListener('dispose', () => sourceDisposals++); material.addEventListener('dispose', () => sourceDisposals++);
   const positions = geometry.getAttribute('position').array.slice(), proxy = createQualityProxy(scene, new PerspectiveCamera());
+  const ownedGeometry = (proxy.scene.children.find((o: any) => o.isMesh) as Mesh).geometry;
   assert.equal(proxy.diagnostics.meshes, 1); assert.equal(proxy.stale(), false); proxy.dispose(); proxy.dispose();
   assert.equal(sourceDisposals, 0); assert.deepEqual(geometry.getAttribute('position').array, positions); assert.equal(mesh.parent, scene);
+  assert.deepEqual(Object.keys(ownedGeometry.attributes), []); assert.equal(ownedGeometry.index, null);
+  assert.equal(proxy.scene.children.length, 0); assert.equal(proxy.maskScene.children.length, 0); assert.equal((proxy.scene as Scene).environment, null);
   assert.deepEqual(terrainQualityColor(10, 20, 30, 1, [0.2, 0.3, 0.4]).map(Number.isFinite), [true, true, true]); geometry.dispose(); material.dispose();
 });
 

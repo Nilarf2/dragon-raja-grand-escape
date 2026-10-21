@@ -46,7 +46,12 @@ export async function loadStudio(services: SceneServices): Promise<SceneInstance
       resize(w, h) { camera.aspect = w / h; camera.updateProjectionMatrix(); quality.resize(); },
       snapshot(): SaveGame { return { schemaVersion: 1, sceneId: manifest.id, mode: 'wander', player: { position: [0, 0, 0], yaw: 0, pitch: 0 }, environment: { hour: 12, rain: 0, fog: 0 } }; },
       restore(save) { if (save.sceneId !== manifest.id || save.mode !== 'wander') throw new Error('Invalid studio save'); },
-      diagnostics() { return { sceneId: manifest.id, actors: 1, skinned: 1, clips: actor.clips, currentClip, skeletonBones: (actor.root.getObjectByName('mannequin') as any).skeleton.bones.length }; },
+      diagnostics() {
+        const skeleton = (actor.root.getObjectByName('mannequin') as any).skeleton;
+        let hash = 2166136261;
+        for (const bone of skeleton.bones) for (const value of bone.matrixWorld.elements) hash = Math.imul(hash ^ Math.round(value * 100000), 16777619);
+        return { sceneId: manifest.id, actors: 1, skinned: 1, clips: actor.clips, currentClip, skeletonBones: skeleton.bones.length, poseHash: (hash >>> 0).toString(16) };
+      },
       async dispose() { await disposeSteps([() => quality.dispose(), () => scope.dispose(), () => scene.traverse(object => { if (typeof object.dispose === 'function') object.dispose(); }), () => scene.clear()], 'Studio cleanup failed'); },
     };
     return result;

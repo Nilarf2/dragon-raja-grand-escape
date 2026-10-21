@@ -24,7 +24,8 @@ export async function createDragonQualityView(renderer, source, camera, options 
     colorPass = pass(source, camera, { samples: 0 });
     maskPass = pass(proxy.maskScene, camera, { samples: 0 });
     const sourceColor = colorPass.getTextureNode('output'), mask = maskPass.getTextureNode('output').r;
-    let result = mix(hdr.colorNode.rgb, sourceColor.rgb, mask.clamp());
+    const preEffects = mix(hdr.colorNode.rgb, sourceColor.rgb, mask.clamp());
+    let result = preEffects;
     const fx = options.context?.fx, u = fx?.uniforms;
     if (u) {
       const depth = colorPass.getTextureNode('depth');
@@ -58,16 +59,18 @@ export async function createDragonQualityView(renderer, source, camera, options 
       inspect() { return { proxy: { ...proxy.diagnostics }, native: view.inspect(), refinement: refinement.inspect() }; },
       readHDR(kind = 'raw') {
         if (disposed) return Promise.reject(new Error('Quality view disposed'));
-        if (!['raw', 'filtered'].includes(kind)) return Promise.reject(new Error('HDR capture requires raw or filtered'));
+        if (!['raw', 'filtered', 'source', 'mask', 'preEffects', 'composite'].includes(kind)) return Promise.reject(new Error('Unknown HDR capture layer'));
         if (kind === 'filtered' && !refinement.inspect().denoised) return Promise.reject(new Error('No completed filtered HDR image'));
         const operation = (async () => {
           const { width, height } = view.inspect(), target = new RenderTarget(width, height, { type: FloatType });
           const output = createPathTracingOutputNode(kind === 'raw' ? view.outputTexture : refinement.outputTexture);
-          const material = new MeshBasicNodeMaterial({ colorNode: output.colorNode.rgb, toneMapped: false }), quad = new QuadMesh(material);
+          const colorNode = kind === 'source' ? sourceColor.rgb : kind === 'mask' ? vec3(mask) : kind === 'preEffects' ? preEffects : kind === 'composite' ? pipeline.outputNode.rgb : output.colorNode.rgb;
+          const material = new MeshBasicNodeMaterial({ colorNode, toneMapped: false }), quad = new QuadMesh(material);
           const previous = { target: renderer.getRenderTarget(), mrt: renderer.getMRT(), tone: renderer.toneMapping, color: renderer.outputColorSpace };
+          const fog = source.fog; source.fog = null;
           try {
             try { renderer.setMRT(null); renderer.toneMapping = NoToneMapping; renderer.outputColorSpace = LinearSRGBColorSpace; renderer.setRenderTarget(target); quad.render(renderer); }
-            finally { renderer.setRenderTarget(previous.target); renderer.setMRT(previous.mrt); renderer.toneMapping = previous.tone; renderer.outputColorSpace = previous.color; }
+            finally { source.fog = fog; renderer.setRenderTarget(previous.target); renderer.setMRT(previous.mrt); renderer.toneMapping = previous.tone; renderer.outputColorSpace = previous.color; }
             const data = await renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height);
             return { width, height, data };
           } finally { target.dispose(); material.dispose(); quad.dispose(); }
@@ -115,8 +118,8 @@ export function qualityPresentation(renderer, scene, camera, options = {}, depen
   }
   function rebuildIfStale() {
     if (!current?.stale() || rebuilding) return false;
-    rebuilding = true; const old = current; current = undefined;
-    track((async () => { try { await old.dispose(); if (!closed && desired === 'quality') await setMode('quality'); } catch (error) { report(error); } finally { rebuilding = false; } })());
+    rebuilding = true; let old = current; current = undefined;
+    track((async () => { try { await old.dispose(); old = undefined; if (!closed && desired === 'quality') await setMode('quality'); } catch (error) { report(error); } finally { old = undefined; rebuilding = false; } })());
     return true;
   }
   return {

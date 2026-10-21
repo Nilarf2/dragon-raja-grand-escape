@@ -186,6 +186,23 @@ export function createQualityProxy(source, camera, options = {}) {
     material.fog = false; materials.add(material); maskMaterialCache.set(key, material);
     maskBindings.push({ source: original, target: material }); return material;
   }
+  function disposeProxy() {
+    if (disposed) return; disposed = true;
+    for (const skeleton of [...proxySkeletons, ...maskSkeletons]) skeleton.dispose();
+    for (const geometry of geometries) {
+      geometry.dispose(); geometry.setIndex(null);
+      for (const name of Object.keys(geometry.attributes)) geometry.deleteAttribute(name);
+      geometry.morphAttributes = {}; // Owned view object only; borrowed BufferAttributes stay untouched.
+    }
+    for (const material of materials) material.dispose(); for (const texture of textures) texture.dispose();
+    scene.traverse(o => { if (typeof o.dispose === 'function') o.dispose(); }); maskScene.traverse(o => { if (typeof o.dispose === 'function') o.dispose(); });
+    scene.clear(); maskScene.clear(); scene.environment = null; maskScene.environment = null; scene.background = null; maskScene.background = null;
+    // A retiring presentation may remain reachable while its replacement loads.
+    // Release CPU geometry/BVH owners as well as their GPU allocations immediately.
+    bindings.length = maskBindings.length = materialBindings.length = townWindows.length = 0;
+    geometryCache.clear(); materialCache.clear(); maskMaterialCache.clear(); terrainColors.clear();
+    geometries.clear(); materials.clear(); textures.clear(); proxySkeletons.clear(); maskSkeletons.clear();
+  }
   try {
     pairObjects(source, scene, (original, proxy) => {
       bindings.push({ source: original, proxy, matrix: matrixKey(original), instanceVersion: original.instanceMatrix?.version, colorVersion: original.instanceColor?.version, geometryVersion: original.isMesh ? geometryRevision(original.geometry) : '' });
@@ -362,18 +379,9 @@ export function createQualityProxy(source, camera, options = {}) {
       for (const skeleton of proxySkeletons) skeleton.update(); for (const skeleton of maskSkeletons) skeleton.update();
       return { camera: cameraChanged, transforms, lights, topology, materials: changedMaterials, environment: updateEnvironment(), geometry: deformation };
     }
-    return { scene, camera, maskScene, diagnostics, sync, stale: () => initialTopology !== topologySignature(),
-      dispose() {
-        if (disposed) return; disposed = true;
-        for (const skeleton of [...proxySkeletons, ...maskSkeletons]) skeleton.dispose();
-        for (const geometry of geometries) geometry.dispose(); for (const material of materials) material.dispose(); for (const texture of textures) texture.dispose();
-        scene.traverse(o => { if (typeof o.dispose === 'function') o.dispose(); }); maskScene.traverse(o => { if (typeof o.dispose === 'function') o.dispose(); }); scene.clear(); maskScene.clear();
-      },
-    };
+    return { scene, camera, maskScene, diagnostics, sync, stale: () => initialTopology !== topologySignature(), dispose: disposeProxy };
   } catch (error) {
     diagnostics.unsupported.push(error.message);
-    for (const skeleton of [...proxySkeletons, ...maskSkeletons]) skeleton.dispose();
-    for (const geometry of geometries) geometry.dispose(); for (const material of materials) material.dispose(); for (const texture of textures) texture.dispose();
-    scene.clear(); maskScene.clear(); throw error;
+    disposeProxy(); throw error;
   }
 }

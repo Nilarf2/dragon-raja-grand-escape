@@ -2,7 +2,8 @@ import { chromium } from 'playwright-core';
 import { mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
-const hardware = process.env.TEST_GPU === 'hardware';
+const hardware = process.env.TEST_GPU === 'hardware' || process.env.HARBOR_GPU_MODE === 'hardware';
+if (hardware) process.env.TEST_GPU = process.env.HARBOR_GPU_MODE = 'hardware';
 const softwareArgs = ['--use-angle=swiftshader', '--enable-unsafe-webgpu', '--enable-features=Vulkan', '--use-vulkan=swiftshader'];
 const browser = process.env.TEST_CDP ? await chromium.connectOverCDP(process.env.TEST_CDP) : await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: process.env.TEST_HEADED !== '1',
@@ -16,6 +17,15 @@ const checks = [], errors = [], warnings = []; let failure;
 page.on('pageerror', e => errors.push(e.stack));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); else if (m.type() === 'warning') warnings.push(m.text()); });
 const inspect = () => page.evaluate(() => window.__DRAGON_RAJA__.inspect());
+const readAdapter = () => page.evaluate(async () => {
+  const a = await navigator.gpu?.requestAdapter({ powerPreference: 'high-performance' });
+  return a ? { ...a.info.toJSON?.(), vendor: a.info.vendor, architecture: a.info.architecture, device: a.info.device, description: a.info.description, fallback: a.info.isFallbackAdapter,
+    limits: { maxBufferSize: a.limits.maxBufferSize, maxStorageBufferBindingSize: a.limits.maxStorageBufferBindingSize } } : null;
+});
+function assertHardware(adapter) {
+  assert.ok(adapter); assert.equal(adapter.fallback, false); assert.doesNotMatch(JSON.stringify(adapter), /swiftshader|llvmpipe|software/i);
+  if (process.env.HARBOR_GPU_EXPECT) assert.ok(JSON.stringify(adapter).toLowerCase().includes(process.env.HARBOR_GPU_EXPECT.toLowerCase()), 'unexpected hardware adapter');
+}
 const captureHDR = (kind, key) => page.evaluate(async ({ kind, key }) => {
   const image = await window.__DRAGON_RAJA__.readQualityHDR(kind), { width, height, data } = image;
   if (key) window[key] = image;
@@ -28,15 +38,15 @@ const captureHDR = (kind, key) => page.evaluate(async ({ kind, key }) => {
 }, {kind,key});
 try {
   const targetScene = process.env.TEST_SCENE || 'studio';
+  if (hardware) {
+    // A tiny same-origin secure document verifies hardware before allocating the game.
+    await page.goto(new URL('LICENSE', base).href);
+    const adapter = await readAdapter(); assertHardware(adapter); checks.push({ earlyHardwareAdapter: adapter });
+  }
   await page.goto(new URL(`?scene=${targetScene}&still&start&at=platform1${hardware ? "" : "&lite&view=raster"}`, base).href);
   await page.waitForFunction(() => window.__DRAGON_RAJA__?.ready || document.querySelector('#runtime-status.error'), null, { timeout: 180000 });
   assert.ok(await page.evaluate(() => window.__DRAGON_RAJA__?.ready), 'Dragon failed to boot');
-  const adapter = await page.evaluate(async () => {
-    const a = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
-    return a ? { ...a.info.toJSON?.(), vendor: a.info.vendor, architecture: a.info.architecture, device: a.info.device, description: a.info.description, fallback: a.info.isFallbackAdapter,
-      limits: { maxBufferSize: a.limits.maxBufferSize, maxStorageBufferBindingSize: a.limits.maxStorageBufferBindingSize } } : null;
-  });
-  if (hardware) { assert.ok(adapter); assert.equal(adapter.fallback, false); assert.doesNotMatch(JSON.stringify(adapter), /swiftshader|llvmpipe|software/i); }
+  const adapter = await readAdapter(); if (hardware) assertHardware(adapter);
   checks.push({ hardware, adapter, viewport, initial: await inspect() });
   if (hardware) assert.equal((await inspect()).quality.mode, 'quality', 'native WebGPU must select quality by default');
   const probe = await page.evaluate(() => window.__DRAGON_RAJA__.probeQuality()); checks.push({ proxy: probe }); assert.deepEqual(probe.unsupported, []);
@@ -48,9 +58,13 @@ try {
   }
   await page.screenshot({ path: `${artifacts}/quality-${targetScene}-${hardware ? 'hardware' : 'software'}.png` });
   if (targetScene === 'studio') {
+    const poses = new Set();
     for (const clip of ['idle', 'walk', 'run', 'sit', 'wave']) {
       await page.click(`[data-clip="${clip}"]`); await page.evaluate(() => { const a = window.__DRAGON_RAJA__; a.step(0.35); a.step(0); });
-      checks.push({ clip, result: await inspect() }); assert.equal((await inspect()).scene.currentClip, clip);
+      assert.equal(await page.evaluate(() => window.__DRAGON_RAJA__.qualityReady()), true);
+      const result = await inspect(), image = await captureHDR('raw'); checks.push({ clip, result, rawHDR: image });
+      assert.equal(result.scene.currentClip, clip); assert.equal(image.nonfinite, 0); assert.ok(image.maximum > 0); assert.ok(result.quality.native.samples.min >= 1);
+      assert.ok(result.scene.poseHash); assert.equal(poses.has(result.scene.poseHash), false, 'each authored clip must produce a distinct sampled skeletal pose'); poses.add(result.scene.poseHash);
       await page.screenshot({ path: `${artifacts}/quality-${clip}-${hardware ? 'hardware' : 'software'}.png` });
     }
   } else {

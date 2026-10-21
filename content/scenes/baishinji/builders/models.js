@@ -1,5 +1,10 @@
 import { uniform } from 'three/tsl';
 import { buildingMaterial } from '../../../../src/rendering/materials.js';
+/** Release a removed source LOD, including its renderer bindings and scene ownership registration. */
+export function disposeTownLOD(group, mesh) {
+  if (!mesh) return;
+  group.remove(mesh); mesh.geometry.dispose(); mesh.dispose();
+}
 export function installModels(C) {
   const THREE = C.THREE;
 // Town buildings from the Blender library (public/content/baishinji/models_town.json, built by tools/town_build.py).
@@ -253,7 +258,7 @@ export function installModels(C) {
       U.uR0.value = R0;
       const group = C.dynamic(new T.Group()); group.name = 'town3d'; scene.add(group);
       const mk = (geo, mat, shadow) => { const m = new T.Mesh(geo, mat); m.castShadow = m.receiveShadow = shadow; m.matrixAutoUpdate = false; group.add(m); release(geo); return m; };
-      const drop = (m) => { if (m) { group.remove(m); m.geometry.dispose(); } };
+      const drop = (m) => disposeTownLOD(group, m);
       // far LOD for every tile up front (small), mid LOD lazily, near LOD per cell lazily
       for (const t of tiles.values()) { const r = mergeHouses(t.list, 2, false); t.far = mk(r.g, bodyMat[2], !mob); }
       const dist = (b, p) => Math.hypot(Math.max(b.x0 - p.x, 0, p.x - b.x0 - b.s), Math.max(b.z0 - p.z, 0, p.z - b.z0 - b.s));

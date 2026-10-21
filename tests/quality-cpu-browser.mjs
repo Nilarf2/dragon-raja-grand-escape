@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-unsafe-webgpu','--enable-features=Vulkan','--use-vulkan=swiftshader']});
 const page=await browser.newPage({viewport:{width:320,height:180}});let result;
 try {
-  await page.goto(new URL('?view=raster&lite&still&start&at=platform1',process.env.TEST_URL||'http://127.0.0.1:5179/').href);
+  const place=process.env.TEST_PLACE||'platform1';
+  await page.goto(new URL(`?view=raster&lite&still&start&at=${encodeURIComponent(place)}`,process.env.TEST_URL||'http://127.0.0.1:5179/').href);
   await page.waitForFunction(()=>window.__DRAGON_RAJA__?.ready,null,{timeout:180000});
   result=await page.evaluate(async()=>{
     const {PathtracerBVHComputeData}=await import('/node_modules/three-gpu-pathtracer/src/webgpu/nodes/PathtracerBVHComputeData.js');

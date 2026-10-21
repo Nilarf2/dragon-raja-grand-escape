@@ -133,7 +133,7 @@ async function boot() {
     teleport: (id: string) => { current()?.quality?.cancel(); return current()?.teleport?.(id); },
     story: (command: string, beat?: string) => { current()?.quality?.cancel(); return current()?.story?.(command, beat); },
     setRenderMode, qualityReady, probeQuality: (verify?: (proxy: unknown, prepared: unknown) => unknown) => current()?.quality?.probe(verify), refine: (samples = 64) => current()?.quality?.refine(samples), cancelRefine: () => current()?.quality?.cancel(),
-    readQualityHDR: (kind: 'raw' | 'filtered' = 'raw') => current()?.quality?.readHDR(kind),
+    readQualityHDR: (kind: 'raw' | 'filtered' | 'source' | 'mask' | 'preEffects' | 'composite' = 'raw') => current()?.quality?.readHDR(kind),
     pause: (value = true) => { if (value) app.pause(); else app.start(); }, dispose,
   });
   Object.defineProperty(window, '__DRAGON_RAJA__', { configurable: true, value: api });
