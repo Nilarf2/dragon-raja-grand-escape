@@ -56,8 +56,8 @@ try {
   } else {
     for (const place of ['station', 'platform1', 'lot', 'lane', 'shrine', 'summit', 'rock', 'wheel', 'beach']) {
       await page.evaluate(id => { const a = window.__DRAGON_RAJA__; a.teleport(id); a.step(0); }, place);
-      // Native proxy refresh after source LOD topology edits is asynchronous.
-      await page.waitForFunction(() => window.__DRAGON_RAJA__.inspect().quality.mode === 'quality', null, { timeout: 180000 });
+      // Settle camera/lazy source LOD, then drain native topology refresh without advancing time.
+      assert.equal(await page.evaluate(() => window.__DRAGON_RAJA__.qualityReady()), true);
       for (let i = 0; i < 4; i++) await page.evaluate(() => window.__DRAGON_RAJA__.step(0));
       checks.push({ place, result: await inspect() });
       await page.screenshot({ path: `${artifacts}/quality-${place}-${hardware ? 'hardware' : 'software'}.png` });

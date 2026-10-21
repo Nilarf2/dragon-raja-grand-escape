@@ -11,7 +11,7 @@ try {
     const {PathtracerBVHComputeData}=await import('/node_modules/three-gpu-pathtracer/src/webgpu/nodes/PathtracerBVHComputeData.js');
     return window.__DRAGON_RAJA__.probeQuality((_proxy,prepared)=>{
       const data=new PathtracerBVHComputeData(prepared);
-      try {data.update();return{passed:true,materials:data.materials.length};}catch(error){return{passed:false,error:error.stack};}finally{data.dispose();}
+      try {data.update();return{passed:true,materials:data.materials.length,attributes:Object.keys(data.attributes),strideBytes:data.structs.attributes.getLength()*4,packedAttributeBytes:data.storage.attributes.value.array.byteLength,storage:Object.fromEntries(Object.entries(data.storage).map(([key,node])=>[key,node?.value?.array?.byteLength]))};}catch(error){return{passed:false,error:error.stack};}finally{data.dispose();}
     });
   });
   assert.equal(result.verification.passed,true,result.verification.error);console.log('PASS FULL SCENE CPU',JSON.stringify(result));

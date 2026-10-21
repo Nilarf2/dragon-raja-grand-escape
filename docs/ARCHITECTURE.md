@@ -133,6 +133,8 @@ actor.play('wave', 0.2, true);
 
 质量 view 的异步创建、过期候选和退役 view 均由 presentation 跟踪。退出场景必须等待全部 GPU 用户和受控 HDR 读回，再按顺序释放局部 Scope、共享句柄和应用 renderer/device；某个 disposer 失败仍尝试后续清理。`readQualityHDR` 是自动化 HDR 证据入口，返回未经 tone mapping 的 float RGBA；实际 GPU 与发布验收见 VALIDATION/PUBLISHING。
 
+自动化定位后先 `pause()`，再 `await qualityReady()`：一次零时间的源场景更新同步玩家、相机和延迟建筑 LOD，随后等待旧 view 退役和新 proxy 建立，最后绘制完整质量帧；返回 `false` 表示已切回 raster、场景变更或准备失败。该接口不会推进剧情时间，连续运行的世界仍可在下一帧产生新的合法变更。精修按钮在 raster 或准备期间禁用，避免把未完成的重建当作可开始收敛的图像。
+
 所有运行时 shader 定制使用 TSL / NodeMaterial，旧 ShaderMaterial 与 onBeforeCompile 字符串替换已移除。`WebGPURenderer` 负责 WebGPU 与 WebGL2 两个后端，内容不维护两套 GLSL/WGSL。
 
 | 模块 | 实现 |

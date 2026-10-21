@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "npm run typecheck && npm run validate && vite build",
+    "build": "npm run typecheck && npm run validate && vite build && node tools/validate/distribution.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "validate": "tsx tools/validate/content.ts",

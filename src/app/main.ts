@@ -38,6 +38,17 @@ async function boot() {
   let modeRequest = 0;
   const picker = document.getElementById('scene-picker') as HTMLSelectElement;
   const modePicker = document.getElementById('render-mode') as HTMLSelectElement;
+  const refineButton = document.getElementById('refine-image') as HTMLButtonElement;
+  const samplesPicker = document.getElementById('refine-samples') as HTMLSelectElement;
+  const resumeButton = document.getElementById('resume-world') as HTMLButtonElement;
+  function updateQualityUI() {
+    const quality = current()?.quality?.inspect();
+    const ready = quality?.mode === 'quality' && !quality.preparing;
+    refineButton.disabled = samplesPicker.disabled = !ready;
+    refineButton.title = ready ? '冻结世界并累积所选采样 / Freeze the world and accumulate samples' : quality?.preparing ? '正在准备光线追踪 / Preparing ray tracing' : '请先启用光线追踪 / Select ray tracing first';
+    resumeButton.disabled = !current()?.quality?.frozen;
+    return quality;
+  }
   if (backend !== 'webgpu') modePicker.querySelector<HTMLOptionElement>('[value="quality"]')!.disabled = true;
   for (const scene of app.manager.list()) { const option = document.createElement('option'); option.value = scene.id; option.textContent = scene.name; picker.add(option); }
   async function setRenderMode(mode: string) {
@@ -45,12 +56,22 @@ async function boot() {
     const selected = current(), ticket = ++modeRequest;
     notify(mode === 'quality' ? '正在准备高画质 / Preparing quality…' : '');
     app.render(); // Paint the existing raster world before asynchronous native preparation starts.
-    const ok = await selected?.quality?.setMode(mode);
+    const transition = selected?.quality?.setMode(mode); updateQualityUI();
+    const ok = await transition;
     if (ticket !== modeRequest || selected !== current()) return false;
     modePicker.value = selected?.quality?.inspect().mode ?? 'raster';
     if (!ok && mode === 'quality') notify(selected?.quality?.inspect().error ?? '当前设备无法启用高画质 / Quality unavailable');
     else notify('');
-    app.render(); return !!ok;
+    app.render(); updateQualityUI(); return !!ok;
+  }
+  async function qualityReady() {
+    const selected = current();
+    // Teleports/restores update the player first. A zero-time source update then
+    // settles its camera and lazy town LOD before awaiting the native rebuild.
+    app.step(0, false);
+    const ok = await selected?.quality?.ready();
+    if (selected !== current()) return false;
+    if (ok) app.render(); updateQualityUI(); return !!ok;
   }
   async function loadScene(id: string, save?: SaveGame) {
     notify('正在加载场景 / Loading scene…');
@@ -67,8 +88,8 @@ async function boot() {
   scope.listen(modePicker, 'change', () => { setRenderMode(modePicker.value).catch(fail); });
   scope.listen(document.getElementById('save-game')!, 'click', () => { try { save(); } catch (e) { fail(e); } });
   scope.listen(document.getElementById('load-game')!, 'click', () => { restore().catch(fail); });
-  scope.listen(document.getElementById('refine-image')!, 'click', () => { try { current()?.quality?.refine(Number((document.getElementById('refine-samples') as HTMLSelectElement).value)); } catch (e) { fail(e); } });
-  scope.listen(document.getElementById('resume-world')!, 'click', () => { current()?.quality?.cancel(); });
+  scope.listen(refineButton, 'click', () => { if (updateQualityUI()?.mode !== 'quality' || refineButton.disabled) return; try { current()?.quality?.refine(Number(samplesPicker.value)); updateQualityUI(); } catch (e) { fail(e); } });
+  scope.listen(resumeButton, 'click', () => { current()?.quality?.cancel(); updateQualityUI(); });
   scope.listen(document, 'keydown', event => {
     const key = (event as KeyboardEvent).code;
     if (/^(Key[WASEDRFTN]|Arrow(Up|Down|Left|Right)|Digit[1-4]|Space|Enter|Escape)$/.test(key)) current()?.quality?.cancel();
@@ -78,13 +99,16 @@ async function boot() {
     if (target === renderer.domElement || target.closest('[data-clip], #btn-story, #btn-wander, #goto button, #sub, #note, #prompt, [data-k="act"], [data-k="skip"], [data-k="time"], [data-k="rain"], [data-k="fog"], #joy')) current()?.quality?.cancel();
   }, { capture: true, passive: true });
   scope.listen(renderer.domElement, 'wheel', () => current()?.quality?.cancel(), { capture: true, passive: true });
-  let frames = 0, sampleTime = performance.now(), lastFPS = 0;
+  let frames = 0, sampleTime = performance.now(), lastFPS = 0, wasPreparing = false;
   app.loop.add(() => {
+    const quality = updateQualityUI();
+    if (quality?.preparing) notify('正在准备光线追踪，暂用实时预览 / Preparing ray tracing; showing raster preview');
+    else if (wasPreparing) notify(quality?.error ?? '');
+    wasPreparing = !!quality?.preparing;
     frames++;
     const now = performance.now();
     if (now - sampleTime >= 1500) {
       lastFPS = frames * 1000 / (now - sampleTime); frames = 0; sampleTime = now;
-      const quality = current()?.quality?.inspect();
       if (quality?.refinement && quality.refinement.state !== 'idle') {
         const stage = quality.refinement;
         notify(stage.error ?? `${stage.state} · ${stage.samples?.min?.toFixed(0) ?? 0}/${stage.targetSamples} spp`);
@@ -102,7 +126,7 @@ async function boot() {
     snapshot: app.snapshot, save, restore,
     teleport: (id: string) => { current()?.quality?.cancel(); return current()?.teleport?.(id); },
     story: (command: string, beat?: string) => { current()?.quality?.cancel(); return current()?.story?.(command, beat); },
-    setRenderMode, probeQuality: (verify?: (proxy: unknown, prepared: unknown) => unknown) => current()?.quality?.probe(verify), refine: (samples = 64) => current()?.quality?.refine(samples), cancelRefine: () => current()?.quality?.cancel(),
+    setRenderMode, qualityReady, probeQuality: (verify?: (proxy: unknown, prepared: unknown) => unknown) => current()?.quality?.probe(verify), refine: (samples = 64) => current()?.quality?.refine(samples), cancelRefine: () => current()?.quality?.cancel(),
     readQualityHDR: (kind: 'raw' | 'filtered' = 'raw') => current()?.quality?.readHDR(kind),
     pause: (value = true) => { if (value) app.pause(); else app.start(); }, dispose,
   });

@@ -113,6 +113,12 @@ export function qualityPresentation(renderer, scene, camera, options = {}, depen
       } catch (error) { report(error); return false; }
     })());
   }
+  function rebuildIfStale() {
+    if (!current?.stale() || rebuilding) return false;
+    rebuilding = true; const old = current; current = undefined;
+    track((async () => { try { await old.dispose(); if (!closed && desired === 'quality') await setMode('quality'); } catch (error) { report(error); } finally { rebuilding = false; } })());
+    return true;
+  }
   return {
     probe(verify) {
       if (closed) throw new Error('Quality presentation disposed');
@@ -129,12 +135,18 @@ export function qualityPresentation(renderer, scene, camera, options = {}, depen
     },
     get active() { return !!current; }, get frozen() { return current?.frozen ?? false; },
     setMode,
-    render() {
-      if (current?.stale() && !rebuilding) {
-        rebuilding = true; const old = current; current = undefined;
-        track((async () => { try { await old.dispose(); if (!closed && desired === 'quality') await setMode('quality'); } catch (error) { report(error); } finally { rebuilding = false; } })());
-        return false;
+    async ready() {
+      // Callers first settle their source update. Rebuilds triggered by that update are
+      // drained here without drawing an obsolete proxy or advancing simulation time.
+      while (!closed) {
+        if (operations.size) { await Promise.allSettled([...operations]); continue; }
+        if (desired !== 'quality' || !current) return false;
+        if (!rebuildIfStale()) return true;
       }
+      return false;
+    },
+    render() {
+      if (rebuildIfStale()) return false;
       current?.render(); return !!current;
     },
     resize() { current?.resize(); },

@@ -47,3 +47,15 @@ test('all cleanup stages run in order when an earlier GPU drain rejects', async 
   ]), error => error instanceof AggregateError && error.errors[0] === failure);
   assert.deepEqual(order, ['refinement', 'native', 'proxy', 'source']);
 });
+
+test('quality readiness drains a stale source rebuild before refinement is available', async () => {
+  const drain = deferred<void>(); let creates = 0, stale = false;
+  const original = fakeView(async () => drain.promise); original.stale = () => stale;
+  const presentation = qualityPresentation(null, null, null, {}, { createView: async () => ++creates === 1 ? original : fakeView() });
+  await presentation.setMode('quality'); stale = true;
+  let ready = false; const waiting = presentation.ready().then(value => { ready = value; });
+  await flush(); assert.equal(presentation.inspect().preparing, true); assert.equal(ready, false);
+  drain.resolve(); await waiting; assert.equal(ready, true); assert.equal(creates, 2);
+  assert.equal(presentation.inspect().preparing, false); presentation.refine(64); assert.equal(presentation.frozen, true);
+  await presentation.setMode('raster'); assert.equal(await presentation.ready(), false); await presentation.dispose();
+});

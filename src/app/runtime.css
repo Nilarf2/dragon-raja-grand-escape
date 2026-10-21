@@ -9,5 +9,6 @@
 @media (max-width: 600px) { .runtime-toolbar { top: auto; bottom: 8px; right: 8px; } .runtime-toolbar select { max-width: 150px; } }
 .runtime-toolbar { max-width: min(920px, calc(100vw - 24px)); flex-wrap: wrap; justify-content: flex-end; }
 .runtime-toolbar button, .runtime-toolbar select { min-height: 34px; }
+.runtime-toolbar button:disabled, .runtime-toolbar select:disabled { opacity: .5; cursor: default; }
 @media (max-width: 900px) { .runtime-toolbar { gap: 4px; } .runtime-toolbar button, .runtime-toolbar select { font-size: 11px; padding: 6px; } }
 @media (max-width: 600px) { .runtime-toolbar { bottom: max(8px, env(safe-area-inset-bottom)); max-width: calc(100vw - 16px); } .animation-controls { bottom: 115px; } }
