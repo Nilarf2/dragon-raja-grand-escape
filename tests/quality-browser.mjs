@@ -66,6 +66,10 @@ try {
   const beforeRefine = await page.evaluate(() => window.__DRAGON_RAJA__.snapshot());
   await page.evaluate(() => { const a = window.__DRAGON_RAJA__; a.refine(64); a.step(1); });
   assert.deepEqual(await page.evaluate(() => window.__DRAGON_RAJA__.snapshot()), beforeRefine, 'refinement must freeze the full simulation');
+  if (targetScene === 'baishinji') {
+    const hour = beforeRefine.environment.hour;
+    assert.equal(await page.locator('#clock').textContent(), `${String(Math.floor(hour)).padStart(2,'0')}:${String(Math.floor((hour % 1)*60)).padStart(2,'0')}`, 'frozen HUD must describe the captured world');
+  }
   // Real input resumes simulation before changing gameplay state; toolbar expansion is inert.
   if (targetScene === 'studio') {
     await page.click('[data-clip="walk"]'); assert.equal((await inspect()).scene.currentClip, 'walk');

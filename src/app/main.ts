@@ -99,20 +99,26 @@ async function boot() {
     if (target === renderer.domElement || target.closest('[data-clip], #btn-story, #btn-wander, #goto button, #sub, #note, #prompt, [data-k="act"], [data-k="skip"], [data-k="time"], [data-k="rain"], [data-k="fog"], #joy')) current()?.quality?.cancel();
   }, { capture: true, passive: true });
   scope.listen(renderer.domElement, 'wheel', () => current()?.quality?.cancel(), { capture: true, passive: true });
-  let frames = 0, sampleTime = performance.now(), lastFPS = 0, wasPreparing = false;
-  app.loop.add(() => {
+  let qualityMessage = '';
+  function refreshRuntimeUI() {
     const quality = updateQualityUI();
-    if (quality?.preparing) notify('正在准备光线追踪，暂用实时预览 / Preparing ray tracing; showing raster preview');
-    else if (wasPreparing) notify(quality?.error ?? '');
-    wasPreparing = !!quality?.preparing;
+    const stage = quality?.refinement;
+    const labels: Record<string, string> = { sampling: '采样 / Sampling', denoising: '去噪 / Denoising', complete: '完成 / Complete', error: '失败 / Failed' };
+    const message = quality?.preparing ? '正在准备光线追踪，暂用实时预览 / Preparing ray tracing; showing raster preview' : stage && stage.state !== 'idle' ? stage.error ?? `${labels[stage.state] ?? stage.state} · ${stage.samples?.min?.toFixed(0) ?? 0}/${stage.targetSamples} spp` : quality?.error ?? '';
+    if (message && message !== qualityMessage) notify(message);
+    else if (!message && qualityMessage && status.textContent === qualityMessage) notify('');
+    qualityMessage = message;
+  }
+  // GPU completion can happen after the last render in a paused/static application.
+  // Keep useful DOM state current without advancing the world or submitting GPU work.
+  const statusTimer = setInterval(refreshRuntimeUI, 200); scope.defer(() => clearInterval(statusTimer));
+  let frames = 0, sampleTime = performance.now(), lastFPS = 0;
+  app.loop.add(() => {
+    refreshRuntimeUI();
     frames++;
     const now = performance.now();
     if (now - sampleTime >= 1500) {
       lastFPS = frames * 1000 / (now - sampleTime); frames = 0; sampleTime = now;
-      if (quality?.refinement && quality.refinement.state !== 'idle') {
-        const stage = quality.refinement;
-        notify(stage.error ?? `${stage.state} · ${stage.samples?.min?.toFixed(0) ?? 0}/${stage.targetSamples} spp`);
-      }
       if (query.has('stats')) document.getElementById('runtime-stats')!.textContent = `${backend} · ${lastFPS.toFixed(0)} fps · ${renderer.info.render.drawCalls} calls`;
     }
   });

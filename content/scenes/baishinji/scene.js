@@ -131,6 +131,7 @@ function build(services, scope, resources, data) {
       controls?.tick(dt);
     },
     render() {
+      controls?.refreshHUD(); // Read-only display refresh also runs while simulation is frozen.
       if (!(env.mode === 'story' && C.Story.blackout())) { if (quality.active) quality.render(); else fx.render(env.t); }
       if (C.capture) { try { C.Story.postcard(C.capture, renderer.domElement.toDataURL('image/jpeg', 0.85)); } finally { C.capture = null; } }
     },

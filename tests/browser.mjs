@@ -69,6 +69,8 @@ try {
     }
     await page.evaluate(() => window.__DRAGON_RAJA__.restore());
     assert.equal((await inspect()).scene.mode, 'story');
+    const restoredHour = (await inspect()).scene.hour;
+    assert.equal(await page.locator('#clock').textContent(), `${String(Math.floor(restoredHour)).padStart(2, '0')}:${String(Math.floor((restoredHour % 1) * 60)).padStart(2, '0')}`, 'restored zero-time HUD must show the current world hour');
     checks.push({ restored: await inspect() });
     const story = await page.evaluate(() => {
       const app = window.__DRAGON_RAJA__, visited = new Set();
