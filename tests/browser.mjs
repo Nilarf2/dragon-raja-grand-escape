@@ -5,8 +5,12 @@ import assert from 'node:assert/strict';
 const artifacts = 'tests/artifacts'; await mkdir(artifacts, { recursive: true });
 const name = process.env.TEST_NAME || (process.env.TEST_QUERY ? 'effects' : 'lifecycle');
 const base = process.env.TEST_URL || 'http://127.0.0.1:5179/';
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: true,
-  args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-background-networking', '--use-angle=swiftshader', '--enable-unsafe-webgpu', '--enable-features=Vulkan', '--use-vulkan=swiftshader'] });
+const hardware = process.env.TEST_GPU === 'hardware';
+const softwareArgs = ['--use-angle=swiftshader', '--enable-unsafe-webgpu', '--enable-features=Vulkan', '--use-vulkan=swiftshader'];
+const browser = process.env.TEST_CDP ? await chromium.connectOverCDP(process.env.TEST_CDP) : await chromium.launch({
+  executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: process.env.TEST_HEADED !== '1',
+  args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-background-networking', ...(hardware ? ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'] : softwareArgs)],
+});
 const errors = [], warnings = [], checks = [];
 let failure;
 const page = await browser.newPage({ viewport: { width: 800, height: 450 } });
@@ -21,9 +25,18 @@ page.on('console', message => {
 });
 const inspect = () => page.evaluate(() => window.__DRAGON_RAJA__.inspect());
 try {
-  await page.goto(new URL(process.env.TEST_QUERY || '?lite&nofx&still&start', base).href);
+  const url = new URL(process.env.TEST_QUERY || '?lite&nofx&still&start', base); url.searchParams.set('view', 'raster');
+  await page.goto(url.href);
   await page.waitForFunction(() => window.__DRAGON_RAJA__?.ready || document.querySelector('#runtime-status.error'), null, { timeout: 120000 });
   assert.ok(await page.evaluate(() => window.__DRAGON_RAJA__?.ready), 'application did not boot');
+  const adapter = await page.evaluate(async () => {
+    const adapter = await navigator.gpu?.requestAdapter({ powerPreference: 'high-performance' });
+    if (!adapter) return null;
+    return { vendor: adapter.info.vendor, architecture: adapter.info.architecture, device: adapter.info.device, description: adapter.info.description, fallback: adapter.info.isFallbackAdapter,
+      limits: { maxBufferSize: adapter.limits.maxBufferSize, maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize, maxTextureDimension2D: adapter.limits.maxTextureDimension2D } };
+  });
+  if (hardware) { assert.ok(adapter, 'hardware test requires a native GPU adapter'); assert.equal(adapter.fallback, false); assert.doesNotMatch(JSON.stringify(adapter), /swiftshader|llvmpipe|software/i); }
+  checks.push({ validation: hardware ? 'hardware' : 'software', adapter });
   const initial = await inspect(); checks.push({ initial }); console.log('READY', JSON.stringify(initial));
   assert.equal(initial.backend, process.env.TEST_QUERY?.includes('renderer=webgl') ? 'webgl2' : 'webgpu');
   await page.screenshot({ path: `${artifacts}/${name}-baishinji.png` });
@@ -43,11 +56,13 @@ try {
     for (let cycle = 0; cycle < 3; cycle++) {
       await page.evaluate(() => window.__DRAGON_RAJA__.switchScene('studio'));
       const studio = await inspect(); assert.equal(studio.scene.skinned, 1); assert.deepEqual(studio.scene.clips, ['idle', 'walk', 'run', 'sit', 'wave']);
+      assert.equal(await page.locator('#help').evaluate(element => element.classList.contains('hidden')), true, 'old scene cleanup must preserve Studio UI ownership');
       await page.click('[data-clip="walk"]');
       await page.evaluate(() => window.__DRAGON_RAJA__.step(0.3));
       await page.screenshot({ path: `${artifacts}/studio-${cycle}.png` });
       await page.evaluate(() => window.__DRAGON_RAJA__.switchScene('baishinji'));
       const back = await inspect(); checks.push({ cycle, studio, back });
+      assert.equal(await page.locator('#help').evaluate(element => element.classList.contains('hidden')), false, 'Baishinji claims its own help state');
       assert.equal(back.assets, initial.assets); assert.equal(back.scene.colliders, initial.scene.colliders); assert.equal(back.scene.updaters, initial.scene.updaters);
       if (cycle === 0) warmMemory = back.memory;
       else for (const key of ['geometries', 'textures', 'renderTargets', 'attributes', 'attributesSize', 'uniformBuffers']) assert.equal(back.memory[key], warmMemory[key], `${key} grew after scene reload`);
@@ -97,6 +112,6 @@ try {
   console.log('STATUS', await page.locator('#runtime-status').textContent().catch(() => 'unavailable'));
   process.exitCode = 1;
 } finally {
-  await writeFile(`${artifacts}/${name}-result.json`, JSON.stringify({ passed: !failure, failure, browser: browser.version(), base, blockedStorage: process.env.TEST_BLOCK_STORAGE === '1', query: process.env.TEST_QUERY || '?lite&nofx&still&start', checks, errors, warnings: [...new Set(warnings)] }, null, 2));
-  await browser.close();
+  await writeFile(`${artifacts}/${name}-result.json`, JSON.stringify({ passed: !failure, failure, browser: browser.version(), hardware, cdp: !!process.env.TEST_CDP, base, blockedStorage: process.env.TEST_BLOCK_STORAGE === '1', query: process.env.TEST_QUERY || '?lite&nofx&still&start', checks, errors, warnings: [...new Set(warnings)] }, null, 2));
+  if (!process.env.TEST_CDP) await browser.close(); else await page.close();
 }

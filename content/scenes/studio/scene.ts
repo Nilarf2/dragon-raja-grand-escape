@@ -6,6 +6,8 @@ import type { SaveGame } from '../../../src/core/SaveStore';
 import type { SceneServices, SceneInstance } from '../../../src/world/types';
 import { resetWorldUI } from '../../../src/ui/resetWorldUI';
 import manifest from './manifest.json';
+import { qualityPresentation } from '../../../src/rendering/QualityView.js';
+import { disposeSteps } from '../../../src/core/dispose';
 
 export async function loadStudio(services: SceneServices): Promise<SceneInstance> {
   const scope = new Scope();
@@ -23,11 +25,12 @@ export async function loadStudio(services: SceneServices): Promise<SceneInstance
     scope.defer(() => { ground.geometry.dispose(); ground.material.dispose(); grid.geometry.dispose(); (Array.isArray(grid.material) ? grid.material : [grid.material]).forEach(m => m.dispose()); light.shadow.dispose(); });
     actor.root.traverse((o: any) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     scene.add(actor.root); actor.play('idle');
+    const quality = qualityPresentation(services.renderer, scene, camera, { frameBudget: services.query.has('lite') ? 8192 : 250000, onError: (error: Error) => services.notify(error.message) });
     let currentClip = 'idle';
     const result: SceneInstance = {
-      id: manifest.id, scene, camera,
+      id: manifest.id, scene, camera, quality,
       enter() {
-        resetWorldUI(); document.getElementById('title')!.classList.add('fade'); document.getElementById('hud')!.classList.remove('hidden');
+        const help = document.getElementById('help')!, helpWasHidden = help.classList.contains('hidden'), ownsUI = resetWorldUI(); document.getElementById('title')!.classList.add('fade'); document.getElementById('hud')!.classList.remove('hidden');
         document.getElementById('place')!.textContent = '角色动作预览'; document.getElementById('clock')!.textContent = '';
         document.getElementById('help')!.classList.add('hidden');
         const panel = document.createElement('div'); panel.id = 'animation-controls'; panel.className = 'animation-controls';
@@ -36,15 +39,15 @@ export async function loadStudio(services: SceneServices): Promise<SceneInstance
           const button = document.createElement('button'); button.textContent = labels[clip] ?? clip; button.dataset.clip = clip;
           scope.listen(button, 'click', () => { currentClip = clip; actor.play(clip, 0.25, clip === 'wave'); }); panel.append(button);
         }
-        document.body.append(panel); scope.defer(() => { panel.remove(); document.getElementById('help')!.classList.remove('hidden'); });
+        document.body.append(panel); scope.defer(() => { panel.remove(); if (ownsUI()) help.classList.toggle('hidden', helpWasHidden); });
       },
-      update(dt) { actor.update(dt); },
-      render() { services.renderer.render(scene, camera); },
-      resize(w, h) { camera.aspect = w / h; camera.updateProjectionMatrix(); },
+      update(dt) { if (!quality.frozen) actor.update(dt); },
+      render() { if (quality.active) quality.render(); else services.renderer.render(scene, camera); },
+      resize(w, h) { camera.aspect = w / h; camera.updateProjectionMatrix(); quality.resize(); },
       snapshot(): SaveGame { return { schemaVersion: 1, sceneId: manifest.id, mode: 'wander', player: { position: [0, 0, 0], yaw: 0, pitch: 0 }, environment: { hour: 12, rain: 0, fog: 0 } }; },
       restore(save) { if (save.sceneId !== manifest.id || save.mode !== 'wander') throw new Error('Invalid studio save'); },
       diagnostics() { return { sceneId: manifest.id, actors: 1, skinned: 1, clips: actor.clips, currentClip, skeletonBones: (actor.root.getObjectByName('mannequin') as any).skeleton.bones.length }; },
-      dispose() { scope.dispose(); scene.traverse(object => object.dispose()); scene.clear(); },
+      async dispose() { await disposeSteps([() => quality.dispose(), () => scope.dispose(), () => scene.traverse(object => { if (typeof object.dispose === 'function') object.dispose(); }), () => scene.clear()], 'Studio cleanup failed'); },
     };
     return result;
   } catch (error) { scope.dispose(); throw error; }

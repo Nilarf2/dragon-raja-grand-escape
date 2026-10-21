@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <link rel="icon" href="data:,">
-<title>迎着阳光盛大逃亡 — A Grand Escape into the Sun (v0.3-alpha)</title>
+<title>[龙族] 迎着阳光盛大逃亡 · Dragon Raja: A Grand Escape into the Sun</title>
+<meta name="description" content="龙族III同人场景漫游与剧情体验：在梅津寺的车站、街巷、海岸与山顶自由行走。Unofficial, non-commercial Dragon Raja III fan tribute: explore Baishinji and follow the escape story.">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -40,7 +41,7 @@
     <div class="buttons"><button id="btn-story">Story</button><button id="btn-wander">Wander</button></div>
     <p class="hint">sound on recommended · story takes about 15 minutes<span class="touch-hint"><br>left thumb: walk · right thumb: look · tap to continue</span></p>
   </div>
-  <p class="credit">v0.3-alpha · a non-commercial fan work by Nilarf2 · map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) ·
+  <p class="credit">v0.4.0 · a non-commercial fan work by Nilarf2 · map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) ·
     elevation: 国土地理院 <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">GSI</a> · built with <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a></p>
 </div>
 
@@ -59,7 +60,10 @@
 
 <div class="runtime-toolbar" aria-label="场景和存档">
   <select id="scene-picker" aria-label="选择场景"></select>
-  <button id="save-game">保存</button><button id="load-game">继续</button>
+  <button id="save-game">保存 / Save</button><button id="load-game">继续 / Continue</button>
+  <select id="render-mode" aria-label="画面 / Rendering"><option value="raster">实时 / Realtime</option><option value="quality">光线追踪 / Ray tracing</option></select>
+  <select id="refine-samples" aria-label="静帧采样 / Image samples"><option value="64">64 spp</option><option value="256">256 spp</option></select>
+  <button id="refine-image">精修静帧 / Refine</button><button id="resume-world">继续世界 / Resume</button>
 </div>
 <div id="runtime-status" role="status" aria-live="polite"></div>
 <div id="runtime-stats"></div>

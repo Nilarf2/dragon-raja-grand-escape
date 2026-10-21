@@ -1,4 +1,19 @@
-# v0.3 迁移验证
+# v0.4 Harbor migration / Harbor 迁移验证
+
+执行日期 / Date: 2026-10-21. 本节记录本次迁移，以下 v0.3 记录保留为历史基线。
+
+- `npm test`: 21/21 passed. Includes independent actors, original saves/story/scene lifecycle, quality candidate cancellation and delayed GPU cleanup, all-attempt failure cleanup, original geometry ownership, building LOD, exact authored room colour/emission, clock-style private geometry updates with untouched static BVHs, and DEM clipping around an island invisible to six triangle sample points.
+- `npm run build`: typecheck, content validation and production build passed. Relative `base: './'`; root HTML is 4.11 KB. The official 7,698,432-byte OIDN large FP32 weight is a separate same-origin lazy asset, with license.
+- Original raster software browser regression passed with no JS/GPU/HTTP errors or warnings: all nine places, eleven story beats, original save/restore and three scene round trips. Explicit `view=raster` and SwiftShader identify this as compatibility/logic evidence, not GTX1070 performance proof.
+- Full Baishinji CPU-only quality conversion and private Harbor compaction: 1,474 meshes, 60,894 instances, 4,658,630 expanded triangles; 1,359 unique prepared geometries, 7,893,563 compact vertices, 287,122,268 geometry bytes and 631,485,040 estimated attribute bytes. Unsupported material list was empty. This is capacity planning, not GPU allocation proof.
+- The actual upstream `PathtracerBVHComputeData.update()` CPU build then passed with 417 materials in 22.47 s after Harbor's ordered ≤128-group partitions and empty-LOD scaffolds. Prepared parts count is 1,504; source instances count is 60,896 because that inspection includes two empty, nonrendering scaffolds. It does not add game content. Expanded triangle count remains exactly 4,658,630. `npm run test:quality:cpu` fixes this real full-scene build as a preflight regression, served through Vite rather than the production static server.
+- A fixed-build software Studio HDR smoke at an explicitly reduced 80×45 drawing buffer passed complete-frame/megakernel rendering with fifteen bounces, minimum 2 spp, finite nonzero raw HDR and no console errors. It verified the capture/composition path and corrected an undefined NodeMaterial position node; it is not hardware or full-scene acceptance.
+- Hardware acceptance and platform updates are pending. The test defaults to an actual 1280×720 hardware viewport, full drawing buffer and fifteen bounces, and rejects software/fallback adapters. Final acceptance must include Baishinji, live updates, all five existing Studio clips, minimum 64 spp, OIDN and raster restoration.
+- The first two GTX1070 full-scene preparations reported explicit raster fallback: upstream seven-bit BVH root capacity and an empty-LOD material group lookup. Those failures are not successful quality validation. The CPU fixes above are now awaiting the next actual GPU allocation and image test; nothing has been merged or published based on those fallbacks.
+
+`tests/quality-browser.mjs` supports `TEST_GPU=hardware`, `TEST_SCENE=baishinji|studio`, `TEST_REFINE=1`, `TEST_WIDTH/TEST_HEIGHT`, `TEST_CDP`, `TEST_HEADED` and `CHROMIUM_PATH`. Software quality checks use a smaller explicitly labelled functional viewport. No software result is reported as hardware validation.
+
+# v0.3 迁移验证（历史 / Historical）
 
 执行日期：2026-10-18。基线为原仓库 `fdc41fb73abccef0ce900ef0627c2848f9412061`。
 

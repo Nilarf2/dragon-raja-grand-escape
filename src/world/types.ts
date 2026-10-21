@@ -1,15 +1,18 @@
 import type { Camera, Scene, WebGPURenderer } from 'three/webgpu';
 import type { AssetManager } from '../assets/AssetManager';
 import type { SaveGame } from '../core/SaveStore';
+import type { Scope } from '@harbor/engine';
+import type { ApplicationScene } from '@harbor/engine/application';
 
 export interface SceneServices {
   renderer: WebGPURenderer;
   assets: AssetManager;
   signal: AbortSignal;
+  scope?: Scope;
   query: URLSearchParams;
   notify(message: string): void;
 }
-export interface SceneInstance {
+export interface SceneInstance extends ApplicationScene<SaveGame> {
   readonly id: string;
   readonly scene: Scene;
   readonly camera: Camera;
@@ -20,7 +23,10 @@ export interface SceneInstance {
   snapshot(): SaveGame;
   restore(save: SaveGame): void;
   diagnostics(): Record<string, unknown>;
-  dispose(): void;
+  readonly quality?: ReturnType<typeof import('../rendering/QualityView.js')['qualityPresentation']>;
+  teleport?(id: string): unknown;
+  story?(command: string, beat?: string): void;
+  dispose(): void | Promise<void>;
 }
 export interface SceneManifest {
   schemaVersion: 1;

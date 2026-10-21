@@ -1,3 +1,5 @@
+import { SaveStore as HarborSaveStore } from '@harbor/engine/platform';
+
 export interface SaveGame {
   schemaVersion: 1;
   sceneId: string;
@@ -15,18 +17,9 @@ export function validateSave(value: unknown): SaveGame {
   if (s.mode === 'story' && (!s.story || typeof s.story.chapterId !== 'string' || typeof s.story.beatId !== 'string')) throw new Error('Missing story checkpoint');
   return structuredClone(s);
 }
-export class SaveStore {
-  private text: string | null = null;
-  constructor(private storage?: Pick<Storage, 'getItem' | 'setItem'>, private key = 'dragon-raja.save.v1') {}
-  get persistent() { return this.storage !== undefined; }
-  write(save: SaveGame) {
-    this.text = JSON.stringify(validateSave(save));
-    try { this.storage?.setItem(this.key, this.text); }
-    catch { this.storage = undefined; }
-  }
-  read(): SaveGame | undefined {
-    try { if (this.storage) this.text = this.storage.getItem(this.key); }
-    catch { this.storage = undefined; }
-    return this.text === null ? undefined : validateSave(JSON.parse(this.text));
+/** Keep the established key and raw schema: existing platform saves remain valid. */
+export class SaveStore extends HarborSaveStore<SaveGame> {
+  constructor(storage?: Pick<Storage, 'getItem' | 'setItem'>, key = 'dragon-raja.save.v1') {
+    super({ storage, key, validate: validateSave });
   }
 }

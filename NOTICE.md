@@ -57,3 +57,14 @@ This is a non-commercial fan tribute. It is not affiliated with or endorsed by a
 - 『東京ラブストーリー』 (*Tokyo Love Story*) appears only as its name, on the filming-location board that really
   stands at the station, and as a reference in the story. None of its music or footage is used, and no song
   melody is quoted.
+
+## Harbor runtime and native quality rendering / Harbor 运行时与原生质量渲染
+
+The v0.4 application uses @harbor/engine 0.2.0 (MIT), three-gpu-pathtracer (MIT),
+three-mesh-bvh (MIT), and oidn-web (MIT). OIDN denoising weights are distributed
+under Apache-2.0. Their notices and licenses are included in the built `licenses/`
+directory; the same-origin `oidn/manifest.json` records the exact weight digest.
+
+v0.4 使用 Harbor 运行时、原生 WebGPU 路径追踪与同设备 OIDN 去噪。以上第三方
+代码和权重均保留各自许可，不改变本项目地图、模型、音乐、故事的既有归属。
+The mannequin remains an original test asset; no finished Dragon Raja character model is included.

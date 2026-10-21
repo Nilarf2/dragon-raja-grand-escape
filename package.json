@@ -1,6 +1,6 @@
 {
   "name": "dragon-raja-grand-escape",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,9 +10,12 @@
     "typecheck": "tsc --noEmit",
     "validate": "tsx tools/validate/content.ts",
     "test": "tsx --test tests/*.test.ts",
-    "test:browser": "node tests/browser.mjs"
+    "test:browser": "node tests/browser.mjs",
+    "test:quality": "node tests/quality-browser.mjs",
+    "test:quality:cpu": "node tests/quality-cpu-browser.mjs"
   },
   "dependencies": {
+    "@harbor/engine": "file:vendor/harbor-engine-0.2.0.tgz",
     "three": "0.186.1"
   },
   "devDependencies": {
