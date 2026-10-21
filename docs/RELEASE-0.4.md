@@ -15,9 +15,9 @@ Explore the coast, tram station and streets of Baishinji, Matsuyama, or follow a
 
 This Harbor 0.2 migration defaults to full-resolution native WebGPU ray tracing. Static refinement freezes the world for 64/256 spp and same-GPU OIDN. Realtime preserves the original TSL renderer with WebGL2 compatibility; device support depends on measured capabilities. Studio retains the original mannequin and its five skeletal clips; finished Lu Mingfei or Erii models are not added.
 
-GTX1070 初测完整光追帧约 0.8–1 秒，画质模式目前不流畅；交互游玩可切换实时模式，后续再优化性能。
+最高画质是原型：GTX1070、8 GB 主机初测完整光追帧约 0.8–1 秒，首次准备和新建筑 LOD 重建约一分钟，受 CPU、编译与缓存影响。同步准备阶段暂不响应操作；交互游玩可预先选实时模式或 `?view=raster`，后续再优化性能。
 
-Initial GTX1070 full-scene ray-traced frames take about 0.8–1 second. Quality mode is currently slow; choose Realtime for interactive play. Performance tuning is deferred.
+The highest quality mode is a prototype: full-scene frames took about 0.8–1 second on the tested GTX1070/8 GB host, with roughly a minute for first preparation or new building LOD rebuilds. CPU, compilation and cache state affect timings, and synchronous preparation temporarily blocks input. Select Realtime or `?view=raster` before loading for interactive play. Performance tuning is deferred.
 
 《龙族》同人、非官方作品；不代表原作作者、版权方或动画官方。地形、地图和第三方素材许可详见游戏内发行包 NOTICE.md。
 

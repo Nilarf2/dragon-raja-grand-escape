@@ -39,9 +39,9 @@ Deploy the **complete `dist/`** directory to HTTPS static hosting. Relative path
 
 Native WebGPU defaults to ray tracing at full drawing-buffer resolution and fifteen bounces. Realtime preserves the original Three.js WebGPU/TSL world with WebGL2 compatibility; select it explicitly with `?view=raster`. Terrain, station, town, building LOD, sky, water and weather remain available, with AO/SSR retained in realtime mode.
 
-GTX1070 完整场景初测每个光追帧约 0.8–1 秒；当前默认质量配置不适合流畅游玩，可手动选择实时模式。性能优化留待后续。
+最高画质目前是原型。GTX1070、8 GB 主机的完整场景初测每个光追帧约 0.8–1 秒，首次准备约 72 秒，进入新的建筑 LOD 区域重建约 57 秒；耗时也受 CPU、浏览器编译与缓存影响。准备期间保留栅格预览，同步 CPU 阶段暂时不能响应操作或取消。流畅游玩请预先选择实时模式或 `?view=raster`，避开光追准备；性能优化留待后续。
 
-Initial GTX1070 full-scene ray-traced frames take approximately 0.8–1 second. This quality configuration is not smooth for interactive play; select Realtime when playing. Performance tuning follows later.
+The highest quality mode is a prototype. On the tested GTX1070/8 GB host, full-scene ray-traced frames take approximately 0.8–1 second, first preparation about 72 seconds and a new building LOD rebuild about 57 seconds. CPU speed, browser compilation and caches also affect these timings. A raster preview remains visible; synchronous CPU preparation temporarily prevents input and cancellation. For interactive play, select Realtime or `?view=raster` before loading to avoid ray-tracing preparation. Performance tuning follows later.
 
 “光线追踪 / Ray tracing”使用 Harbor 原生 WebGPU 路径追踪。Dragon 显式转换地形颜色、建筑 LOD、实体窗光、室内材质、水面与环境；任意 TSL 不会自动作为物理材质执行。天空、海岸泡沫、雨、云、花瓣与线条通过同相机的线性 HDR 分类合成；光追模式关闭额外 AO/SSR，最终统一调色和输出。未知自定义材质或不支持的变形会明确报告并保留实时模式。
 

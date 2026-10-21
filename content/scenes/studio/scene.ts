@@ -42,7 +42,7 @@ export async function loadStudio(services: SceneServices): Promise<SceneInstance
         document.body.append(panel); scope.defer(() => { panel.remove(); if (ownsUI()) help.classList.toggle('hidden', helpWasHidden); });
       },
       update(dt) { if (!quality.frozen) actor.update(dt); },
-      render() { if (quality.active) quality.render(); else services.renderer.render(scene, camera); },
+      render() { if (!quality.active || !quality.render()) services.renderer.render(scene, camera); },
       resize(w, h) { camera.aspect = w / h; camera.updateProjectionMatrix(); quality.resize(); },
       snapshot(): SaveGame { return { schemaVersion: 1, sceneId: manifest.id, mode: 'wander', player: { position: [0, 0, 0], yaw: 0, pitch: 0 }, environment: { hour: 12, rain: 0, fog: 0 } }; },
       restore(save) { if (save.sceneId !== manifest.id || save.mode !== 'wander') throw new Error('Invalid studio save'); },

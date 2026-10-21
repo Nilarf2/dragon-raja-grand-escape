@@ -132,7 +132,7 @@ function build(services, scope, resources, data) {
     },
     render() {
       controls?.refreshHUD(); // Read-only display refresh also runs while simulation is frozen.
-      if (!(env.mode === 'story' && C.Story.blackout())) { if (quality.active) quality.render(); else fx.render(env.t); }
+      if (!(env.mode === 'story' && C.Story.blackout())) { if (!quality.active || !quality.render()) fx.render(env.t); }
       if (C.capture) { try { C.Story.postcard(C.capture, renderer.domElement.toDataURL('image/jpeg', 0.85)); } finally { C.capture = null; } }
     },
     resize(width, height) { camera.aspect = width / height; camera.userData.fovBoost = width / height < 1 ? 1.35 : 1; camera.updateProjectionMatrix(); fx.setSize(width, height); quality.resize(); },
