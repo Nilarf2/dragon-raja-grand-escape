@@ -76,16 +76,20 @@ export function createWorldControls(C, q) {
   }
 
   C.scope.defer(() => { audio?.dispose(); });
+  function refreshHUD() {
+    if (!C.active || env.mode === 'title') return;
+    const hh = Math.floor(env.hour), mm = Math.floor((env.hour - hh) * 60);
+    $('clock').textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    $('place').textContent = env.mode === 'wander' ? C.placeName(player.pos) : '';
+  }
   return {
-    startStory, startWander,
+    startStory, startWander, refreshHUD,
     tick(dt) {
     // HUD
     hudT -= dt;
     if (hudT <= 0 && env.mode !== 'title') {
       hudT = 0.25;
-      const hh = Math.floor(env.hour), mm = Math.floor((env.hour - hh) * 60);
-      $('clock').textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
-      $('place').textContent = env.mode === 'wander' ? C.placeName(player.pos) : '';
+      refreshHUD();
       if (env.mode === 'wander' && toastT <= 0) {
         const msg = player.hint ? player.hint() : player.sitting ? 'E: stand up' : player.nearSeat() ? 'E: sit' : '';
         $('toast').textContent = msg; $('toast').classList.toggle('show', !!msg);

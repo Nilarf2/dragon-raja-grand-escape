@@ -188,7 +188,7 @@ C.mergeStatic = function (scene, exclude, tile = 120) {
       return g;
     });
     const pos = new Float32Array(count * 3), nor = new Float32Array(count * 3), uv = new Float32Array(count * 2);
-    const col = b.mat.vertexColors ? new Float32Array(count * 3).fill(1) : null;   // vertex-coloured materials keep their colours
+    const col = b.mat.vertexColors || b.list.some(o => o.geometry.hasAttribute('color')) ? new Float32Array(count * 3).fill(1) : null;   // vertex-coloured materials keep their colours
     let off = 0;
     for (const g of geos) {
       if (!g.attributes.normal) g.computeVertexNormals();

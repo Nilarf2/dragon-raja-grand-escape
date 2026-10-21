@@ -15,7 +15,7 @@ export function installWeather(C) {
     // petals: small pink quads, instanced
     const PN = 400, pg = new T.PlaneGeometry(0.05, 0.035);
     this.petals = new T.InstancedMesh(pg, new T.MeshBasicMaterial({ color: 0xffc8d8, side: T.DoubleSide, transparent: true, opacity: 0.95 }), PN);
-    this.petals.frustumCulled = false; this.petals.count = 0; scene.add(C.dynamic(this.petals));
+    this.petals.userData.harborComposite = 'petals'; this.petals.frustumCulled = false; this.petals.count = 0; scene.add(C.dynamic(this.petals));
     this.pdata = [];
     this.ambient = null;   // { center, radius, rate }: a gentle continuous fall (e.g. the shrine lane)
   };

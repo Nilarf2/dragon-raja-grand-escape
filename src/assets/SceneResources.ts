@@ -41,6 +41,7 @@ export class SceneResources {
     });
   }
   get size() { return this.resources.size; }
+  get objectCount() { return this.objects.size; }
   dispose() {
     for (const resource of [...this.resources]) resource.dispose(); this.resources.clear();
     // Object3D.dispose releases per-object render/shadow bindings in modern Three.js.

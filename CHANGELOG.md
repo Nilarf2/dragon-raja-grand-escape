@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.4.0 (2026-10-21; integration validation in progress / 集成验证中)
+
+- 将完整 Dragon 成品迁移为 Harbor 0.2 应用；保留原地图、资产工具、九地点、十一剧情和 schema 1 存档。Migrate the full game to Harbor while preserving the world, asset tools, nine places, eleven beats and existing saves.
+- 通过固定 tarball 和锁文件复现引擎依赖；生命周期、取消、资产、Actor、剧情和空间索引使用 Harbor 公共 API。Use a vendored engine package and public lifecycle, asset, actor, story and spatial APIs.
+- 添加显式 PBR 场景转换与原生 WebGPU 质量视图；原 TSL 实时模式保留，未知材质不静默转换。Add explicit PBR adaptation and native quality rendering, retaining the original raster mode and reporting unsupported inputs.
+- 添加 64/256 spp 冻结静帧与同设备 FP32 OIDN；权重独立同源按需加载。Add full-world static refinement and same-device OIDN with lazy same-origin weights.
+- 界面、标题、介绍与本次记录提供中英双语；Studio 仍为既有 mannequin 五段动作，没有新增正式人物美术。Add bilingual controls and release text; keep the existing five-clip mannequin without claiming finished character art.
+- Software regression passed; native GTX1070 acceptance and platform updates must be recorded separately after execution. 软件回归已通过，真实显卡验收与平台更新在实际执行后另记。
+
 ## v0.3-alpha (2026-10-18)
 
 - Replace fixed script tags and global CITY with an ES modules / Vite application, typed core services and scene-local procedural content.

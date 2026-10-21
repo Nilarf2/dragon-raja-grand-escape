@@ -65,7 +65,7 @@ test('scene transitions preserve old scene on failure and dispose late cancelled
   await manager.switchTo('a'); await assert.rejects(manager.switchTo('broken')); assert.equal(manager.current?.id, 'a'); assert.equal(counts.a, undefined);
   const pending = manager.switchTo('slow'); await manager.switchTo('b'); slow.resolve(instance('slow', counts));
   assert.equal(await pending, false); assert.equal(manager.current?.id, 'b'); assert.equal(counts.slow, 1); assert.equal(counts['slow.enter'], undefined); assert.equal(counts.a, 1);
-  manager.dispose(); manager.dispose(); assert.equal(counts.b, 1);
+  await manager.dispose(); await manager.dispose(); assert.equal(counts.b, 1);
 });
 
 test('spatial candidates include all exact rotated collisions across negative coordinates and cell edges', () => {

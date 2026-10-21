@@ -1,6 +1,8 @@
 import { Scope } from '../../../src/core/Scope';
 import { SceneResources } from '../../../src/assets/SceneResources';
 import { SpatialIndex } from '../../../src/world/SpatialIndex';
+import { qualityPresentation } from '../../../src/rendering/QualityView.js';
+import { disposeSteps } from '../../../src/core/dispose.ts';
 import { PostFX } from '../../../src/rendering/PostFX.js';
 import { createStory } from '../../../src/narrative/createStory.js';
 import { createWorldControls } from '../../../src/ui/WorldControls.js';
@@ -94,10 +96,11 @@ function build(services, scope, resources, data) {
   scope.defer(() => { C.Story.dispose(); for (const actor of C.actors.values()) actor.dispose(); });
   resources.capture(scene);
   scope.defer(() => scene.traverse(object => object.shadow?.dispose()));
+  const quality = qualityPresentation(renderer, scene, camera, { context: C, frameBudget: q.has('lite') ? 8192 : 250000, onError: error => services.notify(error.message) });
   let controls, entered = false, restorePending;
   const focus = new T.Vector3(), forward = new T.Vector3(), env = C.env;
   const instance = {
-    id: manifest.id, scene, camera,
+    id: manifest.id, scene, camera, quality,
     enter() {
       resetWorldUI(); document.body.classList.toggle('touch', touch); entered = true; C.active = true;
       controls = createWorldControls(C, restorePending ? new URLSearchParams() : q);
@@ -105,6 +108,7 @@ function build(services, scope, resources, data) {
       this.resize(innerWidth, innerHeight);
     },
     update(dt) {
+      if (quality.frozen) return;
       env.t += dt;
       if (env.mode === 'wander') env.hour = (env.hour + dt * (env.speed ?? 20) / 3600) % 24;
       if (env.mode === 'story') C.Story.update(dt);
@@ -127,10 +131,11 @@ function build(services, scope, resources, data) {
       controls?.tick(dt);
     },
     render() {
-      if (!(env.mode === 'story' && C.Story.blackout())) fx.render(env.t);
+      controls?.refreshHUD(); // Read-only display refresh also runs while simulation is frozen.
+      if (!(env.mode === 'story' && C.Story.blackout())) { if (!quality.active || !quality.render()) fx.render(env.t); }
       if (C.capture) { try { C.Story.postcard(C.capture, renderer.domElement.toDataURL('image/jpeg', 0.85)); } finally { C.capture = null; } }
     },
-    resize(width, height) { camera.aspect = width / height; camera.userData.fovBoost = width / height < 1 ? 1.35 : 1; camera.updateProjectionMatrix(); fx.setSize(width, height); },
+    resize(width, height) { camera.aspect = width / height; camera.userData.fovBoost = width / height < 1 ? 1.35 : 1; camera.updateProjectionMatrix(); fx.setSize(width, height); quality.resize(); },
     snapshot() {
       return { schemaVersion: 1, sceneId: manifest.id, mode: env.mode === 'story' ? 'story' : 'wander',
         player: { position: player.pos.toArray(), yaw: player.yaw, pitch: player.pitch },
@@ -150,7 +155,7 @@ function build(services, scope, resources, data) {
     },
     teleport(id) { if (!C.PLACES[id]) throw new Error(`Unknown place: ${id}`); return C.goto(id); },
     story(command, beat) { if (command === 'start') { controls.startStory(); if (beat) C.Story.start(beat); } else if (command === 'stop') C.Story.finish(); else if (command === 'next') C.Story.key('KeyN'); else if (command === 'confirm') C.Story.key('Space'); },
-    dispose() { scope.dispose(); scene.clear(); for (const a of [C.updaters, C.colliders, C.decks, C.uses, C.nightMats, C.halos, C.seats]) a.length = 0; },
+    async dispose() { C.active = false; await disposeSteps([() => quality.dispose(), () => scope.dispose(), () => scene.clear(), () => { for (const a of [C.updaters, C.colliders, C.decks, C.uses, C.nightMats, C.halos, C.seats]) a.length = 0; }], 'Baishinji cleanup failed'); },
   };
   function applySave(save) {
     if (env.mode === 'story') C.Story.finish();

@@ -1,6 +1,6 @@
 # 运行框架与内容扩展
 
-v0.3-alpha，2026-10-18。目标是让地点、剧情与角色独立增长，同时保留已有梅津寺内容。这里的“后端升级”指浏览器中的运行框架；仓库没有新增应用服务端。
+v0.4.0，2026-10-21。Dragon 是 Harbor 0.2 的内容应用；保留完整梅津寺和原存档，仓库没有新增应用服务端。引擎从 `vendor/harbor-engine-0.2.0.tgz` 与锁文件安装，不跨仓库引用源码。
 
 ## 依赖方向
 
@@ -16,6 +16,8 @@ app ── world/registry ── lazy import content/scenes/<id>
 
 `src/app/main.ts` 只组装服务和调用场景协议，不知道梅津寺的车站、列车或剧情内容。`src/world/registry.ts` 是内容注册入口，场景实现被拆为动态导入的构建块。`public/content/` 是通过清单加载的数据；未进入的场景不会请求它的模型数据。
 
+应用使用 `@harbor/engine/application` 的 `createApplication`、SceneManager 和 FrameLoop；Scope、共享资产、Actor、StoryRunner 和 SpatialIndex 从 Harbor 公共入口获取。`src/core`、`src/assets` 等同名文件为旧内容导入路径提供薄适配，不再维护重复运行时。Dragon 保留清单、构造器、玩法、相机、SaveGame 验证和渲染风格。
+
 核心服务和独立角色场景采用 TypeScript。梅津寺原有构造算法与剧情以 JavaScript ES modules 保留；`tsconfig.json` 对 TS 核心开启 strict，暂未对整套旧内容开启 checkJs。所有场景运行实例独立，旧代码使用的 `C` 只存在于该梅津寺实例内部，不是全局服务或新增场景的接口。
 
 ## 场景协议
@@ -26,17 +28,17 @@ app ── world/registry ── lazy import content/scenes/<id>
 |---|---|
 | `load(services)` | 异步获取资源并构造候选场景；响应 `signal`；不改当前界面 |
 | `restore(save)` | 检查存档是否属于本场景；进入前暂存，进入后应用 |
-| `enter()` | 旧场景退出后安装本场景界面，必须保持同步、轻量 |
+| `enter()` | 候选准备好后同步安装本场景界面；成功后才提交并释放旧场景 |
 | `update(dt, time)` | 更新游戏状态、动画、环境，`dt` 单位为秒 |
 | `render(time)` | 使用应用提供的 renderer，按需走后期 |
 | `resize(width, height)` | 更新相机和场景独有尺寸 |
 | `snapshot()` | 只返回可序列化存档状态 |
 | `diagnostics()` | 返回小型检查快照 |
-| `dispose()` | 幂等，释放本场景全部所有权 |
+| `dispose()` | 可异步、幂等；先等待质量 GPU 用户清理，再释放本场景所有权 |
 
-`SceneManager` 采用“最后一次切换请求有效”：取消尚未完成的加载，晚到的候选会被销毁。资源加载或存档校验失败时保留当前场景。成功准备后释放旧场景，再调用新场景 `enter()`；`enter()` 自身抛错不具备旧场景回滚，所以异步工作、校验和可能失败的准备都应放在 `load/restore` 阶段。
+`SceneManager` 采用“最后一次切换请求有效”：取消尚未完成的加载，晚到的候选会被销毁。加载、restore 或 enter 失败时保留当前场景。成功 enter 后提交候选并等待旧场景异步清理；旧 UI 清理必须检查所有权，不能重置新场景的界面。候选自己的 enter 副作用仍需由候选 dispose 撤销。异步准备和校验放在 `load/restore` 阶段。
 
-`UpdateLoop` 将正常帧的 dt 限制到 0.1 秒，页面隐藏时暂停。应用使用实际墙钟时间计算 FPS，并在非 lite / still 模式调整分辨率。进入 `?still` 时不运行 RAF，测试接口可以手动步进。
+Harbor FrameLoop 将正常帧 dt 限制到 0.1 秒，页面隐藏时暂停。FPS 使用实际墙钟时间计算；本次取消自动降低分辨率，质量模式始终使用完整 drawing buffer。进入 `?still` 时不运行 RAF，测试接口可以手动步进。
 
 ## 增加一个地点
 
@@ -87,7 +89,7 @@ scene.add(actor.root);
 
 `Actor.fromHandle()` 也可直接接管句柄；无论采用哪种方式，每个独立所有者都应获取自己的 handle。`release()` 可重复调用，但共享一个 handle 给多个不同生命周期会提前释放资源。
 
-取消一个资源使用者不会取消其他使用者；所有使用者退出后 abort。无法立即中断的解析即使晚完成也会释放结果。推荐内嵌资源的 GLB；外链 glTF 子请求的细粒度取消尚未封装。新格式在 `src/assets/loaders.ts` 注册 `{ load, dispose }`，并扩展内容校验规则。
+取消一个资源使用者不会取消其他使用者；所有使用者退出后 abort。无法立即中断的解析即使晚完成也会释放结果。推荐内嵌资源的 GLB；外链 glTF 子请求的细粒度取消尚未封装。新格式在应用创建资产管理器后调用公共 `assets.register(type, { load, dispose })`，并扩展内容校验规则。
 
 梅津寺的 `SceneResources` 是程序化旧内容的资源收集适配层：追踪被合批后脱离场景树的原几何和延迟生成资源，监听显式 dispose，避免只遍历当前可见树造成遗漏。`clone()` 生成且不加入树的几何需要显式 `resources.track()`。Three.js Sprite 的全局共享几何不归单个场景所有。对象本身也需要 `Object3D.dispose()`，以释放渲染和阴影绑定；仅 dispose 几何和材质不够。树木批次各自拥有几何，避免当前渲染器将实例属性的清理关联到共享几何的第一个使用者。树木 LOD 使用实例批次在世界中的包围球中心。车站密集栏杆按 256 个实例分批，限制矩阵缓冲大小，也避免当前 Three.js 在超大实例批次跨阴影 / 普通 pass 时遗漏属性清理。新场景可以直接用 Scope 管理资源，不必使用这个适配层。
 
@@ -95,7 +97,7 @@ scene.add(actor.root);
 
 ## 角色与骨骼动画
 
-`src/characters/Actor.ts` 使用 SkeletonUtils 克隆模型，为每个实例创建 AnimationMixer。`play(name, fade, once)` 支持交叉混合和单次动作，`onFinished()` 返回取消监听函数。
+`src/characters/Actor.ts` 导出 Harbor Actor；它使用 SkeletonUtils 克隆模型，为每个实例创建 AnimationMixer。`play(name, fade, once)` 支持交叉混合和单次动作，`onFinished()` 返回取消监听函数。
 
 ```ts
 actor.play('walk', 0.25);
@@ -124,6 +126,14 @@ actor.play('wave', 0.2, true);
 剧情存档**从当前段落开头恢复**，不保存任意 generator 栈、镜头 tween 或对白中途位置。每个可独立恢复的段落应初始化自己依赖的环境和对象。切换或跳过时关闭 generator，并清理临时道具、计时器、字幕和 tween。
 
 ## 渲染与画质
+
+原生 WebGPU 默认质量视图；`view=raster` 选择下面的原始 TSL 后期，WebGL2 也保留该路径。`qualityProxy.js` 由 Dragon 明确映射地形色、LOD、窗光、室内发光、DEM 裁切物理海水和环境。任意 TSL 不会自动变成 PBR；未知节点材质和未支持变形明确失败并保留 raster。主场景不额外添加角色内容。
+
+`QualityView.js` 借用同一个 renderer/device，交给 Harbor 私有压紧几何与 BVH；实例和三角保留，源几何、材质和模板不被修改。每帧完成完整分辨率的 15-bounce sample，raw linear HDR 通过同相机的分类 mask 合成原天空、泡沫和天气，禁用额外 AO/SSR，统一雾、光束、bloom 和最终色彩变换。64/256 spp 精修冻结整个世界；任何实际玩法输入先取消冻结再执行。OIDN large FP32 同设备、同源懒加载，失败继续显示 raw HDR。
+
+质量 view 的异步创建、过期候选和退役 view 均由 presentation 跟踪。退出场景必须等待全部 GPU 用户和受控 HDR 读回，再按顺序释放局部 Scope、共享句柄和应用 renderer/device；某个 disposer 失败仍尝试后续清理。`readQualityHDR` 是自动化 HDR 证据入口，返回未经 tone mapping 的 float RGBA；实际 GPU 与发布验收见 VALIDATION/PUBLISHING。
+
+自动化定位后先 `pause()`，再 `await qualityReady()`：一次零时间的源场景更新同步玩家、相机和延迟建筑 LOD，随后等待旧 view 退役和新 proxy 建立，最后绘制完整质量帧；返回 `false` 表示已切回 raster、场景变更或准备失败。该接口不会推进剧情时间，连续运行的世界仍可在下一帧产生新的合法变更。精修按钮在 raster 或准备期间禁用，避免把未完成的重建当作可开始收敛的图像。
 
 所有运行时 shader 定制使用 TSL / NodeMaterial，旧 ShaderMaterial 与 onBeforeCompile 字符串替换已移除。`WebGPURenderer` 负责 WebGPU 与 WebGL2 两个后端，内容不维护两套 GLSL/WGSL。
 
